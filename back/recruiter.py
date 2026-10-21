@@ -14,7 +14,7 @@ import db
 
 router = APIRouter(prefix="/api/recruiter", dependencies=[Depends(auth.require_recruiter)])
 
-_INACTIVE_AFTER_MIN = 30  # open and quiet this long → "inactive" (ADR-018)
+_INACTIVE_AFTER_MIN = 5  # open and quiet this long → "inactive" (ADR-018)
 
 
 @router.get("/conversations")
