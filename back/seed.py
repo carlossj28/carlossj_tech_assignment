@@ -13,10 +13,10 @@ import db
 _DEMO = [
     dict(source="chat", outcome="qualified", qualified=True, closed_by="confirm",
          name="Marta Gil",
-         fields={"full_name": "Marta Gil", "has_driver_license": True, "city": "Madrid / Arganzuela",
+         fields={"full_name": "Marta Gil", "has_driver_license": True, "city": "Madrid",
                  "availability": ["full_time"], "preferred_schedule": ["morning"],
                  "prior_experience": {"years": 2, "platforms": ["Glovo"]}, "start_date": "2026-11-03"},
-         summary="Repartidora con coche y 2 años en Glovo; Madrid Arganzuela; jornada completa.",
+         summary="Repartidora con coche y 2 años en Glovo; Madrid; jornada completa.",
          turns=[("assistant", "¡Hola! Soy Rita 👋 ¿Cómo te llamas?"),
                 ("user", "Marta, tengo coche y vivo en Arganzuela")]),
     dict(source="chat", outcome="disqualified", qualified=False, reason="no_license", closed_by="confirm",
@@ -26,7 +26,7 @@ _DEMO = [
          turns=[("assistant", "¿Tienes carné de conducir?"), ("user", "No, todavía no")]),
     dict(source="voice", outcome="review", qualified=None, closed_by="hangup",
          name="Elena Sanz",
-         fields={"full_name": "Elena Sanz", "has_driver_license": True, "city": "Ciudad de México / Coyoacán"},
+         fields={"full_name": "Elena Sanz", "has_driver_license": True, "city": "Ciudad de México"},
          summary="Colgó antes de confirmar; datos completos pendientes de revisión.",
          turns=[("assistant", "¿En qué zona te gustaría trabajar?"), ("user", "En Coyoacán")]),
 ]
