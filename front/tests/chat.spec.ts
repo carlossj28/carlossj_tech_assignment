@@ -3,7 +3,7 @@ import { expect, test, type Page } from "@playwright/test";
 const GREETING = "¡Hola! Soy Rita, de Grupo Sazón.";
 
 // Mock the three chat endpoints. `message` decides each reply; nudge replies `nudges` times, then null.
-async function mockBack(page: Page, { message, nudges = 0 }: { message?: (text: string) => object; nudges?: number } = {}) {
+async function mockBack(page: Page, { message, nudges = 0 }: { message?: (text: string) => object | undefined; nudges?: number } = {}) {
   const calls = { nudge: 0 };
   await page.route("**/api/chat/start", (r) => r.fulfill({ json: { conversation_id: "c1", greeting: GREETING } }));
   await page.route("**/api/chat/message", (r) => {
