@@ -1,0 +1,261 @@
+/* Recruiter panel: same Dimension tokens as the chat (globals.css). */
+.page {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 48px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.narrow {
+  max-width: 420px;
+}
+
+.header {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.toolbar {
+  width: 100%;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.actions {
+  display: flex;
+  gap: 8px;
+}
+
+.title {
+  margin: 0;
+  font-family: var(--font-display), sans-serif;
+  font-weight: 500;
+  font-size: clamp(36px, 7vw, 56px);
+  line-height: 1;
+  letter-spacing: -0.035em;
+  color: var(--white);
+}
+
+.subtitle {
+  margin: 0;
+  font-family: var(--font-display), sans-serif;
+  font-weight: 500;
+  font-size: 18px;
+  color: var(--white);
+}
+
+.tag,
+.chip {
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-pill);
+  padding: 4px 12px;
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0.025em;
+  color: var(--bone);
+}
+
+.chip {
+  color: var(--ash);
+}
+
+.muted {
+  margin: 0;
+  font-size: 14px;
+  color: var(--slate);
+}
+
+.error {
+  margin: 0;
+  font-size: 14px;
+  color: var(--ash);
+}
+
+/* Buttons */
+.ghost,
+.primary,
+.tab {
+  font: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  border-radius: var(--radius-pill);
+  padding: 8px 16px;
+  cursor: pointer;
+}
+
+.ghost {
+  color: var(--bone);
+  background: transparent;
+  border: 1px solid var(--hairline);
+}
+
+.primary {
+  color: var(--graphite);
+  background: var(--white);
+  border: none;
+  padding: 12px 20px;
+  font-size: 15px;
+}
+
+/* Status filter */
+.tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.tab {
+  color: var(--ash);
+  background: transparent;
+  border: 1px solid var(--hairline);
+}
+
+.tab[aria-pressed="true"] {
+  color: var(--graphite);
+  background: var(--white);
+  border-color: var(--white);
+}
+
+.count {
+  opacity: 0.6;
+  margin-left: 4px;
+}
+
+/* Status pill: white = qualified, frosted = pending, outlined/muted = disqualified */
+.status {
+  border-radius: var(--radius-pill);
+  padding: 4px 12px;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.qualified {
+  background: var(--white);
+  color: var(--graphite);
+}
+
+.pending {
+  background: var(--frost);
+  color: var(--bone);
+}
+
+.disqualified {
+  border: 1px solid var(--hairline);
+  color: var(--slate);
+}
+
+/* List */
+.list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 20px;
+  background: var(--frost);
+  border-radius: var(--radius-bubble);
+}
+
+.row:hover {
+  box-shadow: inset 0 0 0 1px var(--hairline);
+}
+
+.name {
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--white);
+}
+
+.meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Detail */
+.detail {
+  display: grid;
+  gap: 16px;
+}
+
+.panel {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  background: var(--frost);
+  border-radius: 24px;
+  padding: 24px;
+}
+
+.fields {
+  margin: 0;
+  display: grid;
+  gap: 12px;
+}
+
+.fields div {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--hairline);
+}
+
+.fields dt {
+  color: var(--ash);
+  font-size: 14px;
+}
+
+.fields dd {
+  margin: 0;
+  text-align: right;
+  color: var(--white);
+}
+
+/* Login form */
+.label {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 14px;
+  color: var(--ash);
+}
+
+.field {
+  font: inherit;
+  font-size: 16px;
+  color: var(--bone);
+  background: var(--graphite);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-pill);
+  padding: 12px 18px;
+  outline: none;
+}
+
+.field:focus {
+  border-color: var(--ash);
+}
+
+@media (min-width: 800px) {
+  .detail {
+    grid-template-columns: 2fr 3fr;
+    align-items: start;
+  }
+}
