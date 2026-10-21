@@ -16,6 +16,8 @@ from dataclasses import dataclass, field
 from functools import lru_cache
 from typing import Any
 
+import guardrails
+import language
 from prompts import SYSTEM_PROMPT
 from tools import OPENAI_TOOL_SCHEMAS, dispatch, recompute_qualified
 
@@ -42,10 +44,20 @@ class TurnResult:
 def run_turn(history: list[dict], extracted: dict, *, client=None) -> TurnResult:
     """Run one user turn end to end. `history` ends with the user's message;
     `extracted` is the field store (mutated in place)."""
+    user_msg = history[-1]["content"] if history else ""
+    lang = language.detect(user_msg)
+    result = TurnResult(reply="", extracted=extracted)
+
+    # Input guardrail: block abuse/injection before spending a model call.
+    if guardrails.is_blocked(user_msg):
+        result.reply = guardrails.refusal(lang)
+        return result
+
     client = client or _default_client()
     model = os.getenv("OPENAI_CHAT_MODEL", "gpt-5-mini")
-    messages = [{"role": "system", "content": SYSTEM_PROMPT}, *history]
-    result = TurnResult(reply="", extracted=extracted)
+    # Language-override goes last so it wins over the prompt for this turn.
+    messages = [{"role": "system", "content": SYSTEM_PROMPT}, *history,
+                {"role": "system", "content": language.override(lang)}]
 
     for _ in range(_MAX_ITERS):
         completion = client.chat.completions.create(
@@ -54,11 +66,12 @@ def run_turn(history: list[dict], extracted: dict, *, client=None) -> TurnResult
         msg = completion.choices[0].message
 
         if not msg.tool_calls:
-            result.reply = msg.content or ""
+            reply = msg.content or ""
             # Safety net: model narrated the close instead of calling it.
-            if not result.completed and _NARRATED.search(result.reply):
-                _finish(result, {"summary": result.reply})
-                result.reply = _NARRATED.sub("", result.reply).strip()
+            if not result.completed and _NARRATED.search(reply):
+                _finish(result, {"summary": reply})
+                reply = _NARRATED.sub("", reply).strip()
+            result.reply = guardrails.sanitize_output(reply)
             return result
 
         messages.append({"role": "assistant", "content": msg.content, "tool_calls": [
@@ -82,3 +95,24 @@ def _finish(result: TurnResult, args: dict) -> None:
     """Seal the verdict in Python (the safety net, ADR-002)."""
     result.completed = True
     result.qualified = recompute_qualified(result.extracted)
+
+
+_NUDGE = {
+    1: "El candidato lleva un rato sin responder. Hazle un recordatorio MUY breve "
+       "(una frase) en su idioma, retomando la última pregunta. No saludes de nuevo. No uses herramientas.",
+    2: "Segundo y último aviso. Dile en una frase, con amabilidad, que puede escribir "
+       "cuando quiera y que dejas la pregunta abierta. No saludes. No uses herramientas.",
+}
+
+
+def run_nudge(history: list[dict], nudge_n: int, *, client=None) -> str:
+    """A gentle re-engagement message after the candidate goes quiet.
+    No tools, no field changes — just a short reminder in their language."""
+    client = client or _default_client()
+    model = os.getenv("OPENAI_CHAT_MODEL", "gpt-5-mini")
+    lang = language.detect(history[-1]["content"]) if history else "es"
+    messages = [{"role": "system", "content": SYSTEM_PROMPT}, *history,
+                {"role": "system", "content": _NUDGE[nudge_n]},
+                {"role": "system", "content": language.override(lang)}]
+    completion = client.chat.completions.create(model=model, messages=messages)
+    return guardrails.sanitize_output(completion.choices[0].message.content or "")
