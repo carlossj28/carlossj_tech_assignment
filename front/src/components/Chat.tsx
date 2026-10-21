@@ -74,7 +74,7 @@ export default function Chat() {
   return (
     <main className={styles.page}>
       <header className={styles.header}>
-        <span className={styles.tag}>Grupo Sazón · Repartidores</span>
+        <span className={styles.tag}>✦ Grupo Sazón · Repartidores</span>
         <h1 className={styles.title}>Habla con Rita</h1>
         <p className={styles.lead}>Unas preguntas rápidas sobre tu candidatura. Tardas menos de 5 minutos.</p>
       </header>

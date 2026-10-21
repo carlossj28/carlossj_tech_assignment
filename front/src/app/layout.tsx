@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
-import { Bebas_Neue, DM_Sans } from "next/font/google";
+import { DM_Sans, Geist } from "next/font/google";
 import "./globals.css";
 
-const display = Bebas_Neue({ variable: "--font-display", weight: "400", subsets: ["latin"] });
-const body = DM_Sans({ variable: "--font-body", weight: "500", subsets: ["latin"] });
+const display = Geist({ variable: "--font-display", weight: "500", subsets: ["latin"] });
+const body = DM_Sans({ variable: "--font-body", weight: ["400", "500"], subsets: ["latin"] });
 
 export const metadata: Metadata = {
   title: "Grupo Sazón — Screening",
