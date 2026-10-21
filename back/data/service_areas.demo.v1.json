@@ -1,4 +1,14 @@
 {
-  "Madrid": ["Centro", "Arganzuela"],
-  "Ciudad de México": ["Cuauhtémoc", "Coyoacán"]
+  "Madrid": [],
+  "Barcelona": [],
+  "Valencia": [],
+  "Sevilla": [],
+  "Málaga": [],
+  "Bilbao": [],
+  "Ciudad de México": ["CDMX", "DF"],
+  "Guadalajara": [],
+  "Monterrey": [],
+  "Puebla": [],
+  "Querétaro": [],
+  "Mérida": []
 }

@@ -1,77 +1,100 @@
-"""Screening logic checks: validation, normalization, the safety net."""
+"""Screening logic checks: typed answers, city matching, status from the data."""
 from datetime import date, timedelta
 
-from service_areas import match_zone
-from tools import dispatch, recompute_qualified
+from prompts import GREETING, SYSTEM_PROMPT
+from service_areas import cities, match_city
+from tools import OPENAI_TOOL_SCHEMAS, dispatch, screening_status
 
 
-def test_city_match_accents_and_zone_alone():
-    assert match_zone("Cuauhtemoc") == "Ciudad de México / Cuauhtémoc"
-    assert match_zone("Arganzuela") == "Madrid / Arganzuela"
-    assert match_zone("Narnia") is None
+def _save(extracted: dict, **fields) -> dict:
+    return dispatch("save_answer", extracted, fields)
 
 
-def test_city_match_quality_typo_and_partial():
-    assert match_zone("Madird Centro") == "Madrid / Centro"          # transposed typo
-    assert match_zone("vivo en el centro de Madrid") == "Madrid / Centro"  # partial / noisy
+def test_city_match_accents_aliases_and_typos():
+    assert match_city("cordoba") is None                       # not covered
+    assert match_city("Ciudad de mexico") == "Ciudad de México"
+    assert match_city("CDMX") == "Ciudad de México"            # alias
+    assert match_city("Madird") == "Madrid"                    # transposed typo
+    assert match_city("vivo en Valencia") == "Valencia"        # noisy input
+    assert match_city("Lerín") is None
+    assert match_city("Narnia") is None
 
 
-def test_record_city_canonicalizes():
+def test_save_answer_stores_typed_values():
     e: dict = {}
-    assert dispatch("record_field", e, {"field": "city", "value": "arganzuela", "confidence": 0.9})["ok"]
-    assert e["city"] == "Madrid / Arganzuela"
-
-
-def test_record_city_rejects_unknown():
-    r = dispatch("record_field", {}, {"field": "city", "value": "Narnia", "confidence": 0.9})
-    assert r == {"ok": False, "validation_error": "City not in a service area."}
-
-
-def test_license_accepts_only_yes_or_no():
-    # The model interprets the candidate's words; Python only checks the type.
-    e: dict = {}
-    dispatch("record_field", e, {"field": "has_driver_license", "value": "yes", "confidence": 0.9})
+    r = _save(e, has_driver_license=True, preferred_schedule=["morning"],
+              prior_experience={"years": 2, "platforms": ["Glovo"]})
+    assert r["ok"]
     assert e["has_driver_license"] is True
-    dispatch("record_field", e, {"field": "has_driver_license", "value": " No ", "confidence": 0.9})
-    assert e["has_driver_license"] is False
+    assert e["preferred_schedule"] == ["morning"]
+    assert e["prior_experience"] == {"years": 2, "platforms": ["Glovo"]}
 
 
-def test_license_accepts_common_yes_no_tokens():
-    # Tolerates format variations of a yes/no token, compared as the whole value.
-    for raw, expected in [("sí", True), ("Si", True), ("1", True), ("true", True),
-                          ("no", False), ("0", False), ("false", False)]:
-        e: dict = {}
-        dispatch("record_field", e, {"field": "has_driver_license", "value": raw, "confidence": 0.9})
-        assert e["has_driver_license"] is expected, raw
+def test_save_answer_several_fields_in_one_call():
+    e: dict = {}
+    assert _save(e, full_name="Marta Gil", has_driver_license=True, city="madrid")["ok"]
+    assert e == {"full_name": "Marta Gil", "has_driver_license": True, "city": "Madrid"}
 
 
-def test_license_raw_text_is_rejected_not_guessed():
-    # Free text (even "Sí, desde noviembre") is never parsed: the model must send yes/no.
-    for raw in ["Sí, desde noviembre", "no tengo", "sí y no"]:
-        e: dict = {}
-        r = dispatch("record_field", e, {"field": "has_driver_license", "value": raw, "confidence": 0.9})
-        assert r["ok"] is False and "has_driver_license" not in e, raw
-
-
-def test_start_date_future_only():
+def test_save_answer_rejects_invalid_types_and_saves_nothing():
     past = (date.today() - timedelta(days=1)).isoformat()
+    for bad in [{"has_driver_license": "sí, desde noviembre"},
+                {"preferred_schedule": ["madrugada"]},
+                {"prior_experience": {"years": -1, "platforms": []}},
+                {"start_date": past}]:
+        e: dict = {}
+        r = _save(e, full_name="Ana", **bad)
+        assert r["ok"] is False and "validation_error" in r, bad
+        assert e == {}, bad                                      # all or nothing
+
+
+def test_start_date_today_or_later():
+    e: dict = {}
     future = (date.today() + timedelta(days=7)).isoformat()
-    assert not dispatch("record_field", {}, {"field": "start_date", "value": past, "confidence": 1})["ok"]
-    assert dispatch("record_field", {}, {"field": "start_date", "value": future, "confidence": 1})["ok"]
+    assert _save(e, start_date=future)["ok"]
+    assert e["start_date"] == future
 
 
-def test_safety_net_seals_verdict():
-    assert recompute_qualified({"has_driver_license": True, "city": "Madrid / Centro"}) is True
-    assert recompute_qualified({"has_driver_license": False, "city": "Madrid / Centro"}) is False
-    assert recompute_qualified({"has_driver_license": True, "city": None}) is False
-    assert recompute_qualified({"_disqualified": True, "has_driver_license": True, "city": "Madrid / Centro"}) is False
+def test_knockout_no_license():
+    r = _save({}, has_driver_license=False)
+    assert r["status"] == "disqualified" and r["knockout"] == "no_license"
 
 
-def test_complete_returns_qualified():
-    e = {"has_driver_license": True, "city": "Madrid / Centro"}
-    assert dispatch("complete_screening", e, {"summary": "ok"}) == {"ok": True, "qualified": True}
+def test_knockout_city_outside_coverage_offers_covered_cities():
+    e: dict = {}
+    r = _save(e, city="Lerín")
+    assert r["status"] == "disqualified" and r["knockout"] == "out_of_service_area"
+    assert r["covered_cities"] == cities()
+    assert e["city"] == "Lerín"                                  # raw text kept for the recruiter
+
+
+def test_qualified_needs_license_and_covered_city():
+    e: dict = {}
+    assert _save(e, has_driver_license=True)["status"] == "pending"
+    assert _save(e, city="madird")["status"] == "qualified"
+
+
+def test_correction_recomputes_status():
+    e: dict = {}
+    _save(e, has_driver_license=True, city="Lerín")
+    assert screening_status(e) == ("disqualified", "out_of_service_area")
+    assert _save(e, city="Madrid")["status"] == "qualified"
+
+
+def test_prompt_lists_every_covered_city():
+    for city in cities():
+        assert city in SYSTEM_PROMPT
+
+
+def test_only_two_tools():
+    assert [t["function"]["name"] for t in OPENAI_TOOL_SCHEMAS] == ["save_answer", "end_interview"]
+
+
+def test_greeting_discloses_assistant():
+    assert "asistente" in GREETING
 
 
 def test_unknown_tool_and_bad_args_dont_raise():
     assert dispatch("nope", {}, {})["ok"] is False
-    assert dispatch("record_field", {}, {"field": "city"})["ok"] is False
+    assert dispatch("save_answer", {}, {"not_a_field": 1})["ok"] is False
+    assert dispatch("end_interview", {}, {})["ok"] is False

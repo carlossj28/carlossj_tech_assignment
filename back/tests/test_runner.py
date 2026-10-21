@@ -1,4 +1,4 @@
-"""P4a runner checks with a fake OpenAI client (no network).
+"""Runner checks with a fake OpenAI client (no network).
 
 The fake replays a scripted list of completions: each turn pops the next one.
 A completion is either tool calls or a final text reply — same shape the real
@@ -6,6 +6,7 @@ SDK returns, so the runner can't tell the difference.
 """
 from types import SimpleNamespace
 
+from prompts import GREETING
 from runner import run_turn
 
 
@@ -29,42 +30,37 @@ class FakeClient:
         return self._script.pop(0)
 
 
-def test_records_field_then_replies():
+def test_greets_without_calling_the_model():
+    r = run_turn([], {})                       # no client: calling the model would fail
+    assert r.reply == GREETING and not r.completed
+
+
+def test_saves_answer_then_replies():
     client = FakeClient([
-        _completion(tools=[_tool_call("record_field", {"field": "full_name", "value": "Marta", "confidence": 0.9})]),
+        _completion(tools=[_tool_call("save_answer", {"full_name": "Marta"})]),
         _completion(text="¡Genial, Marta! ¿Tienes carné de conducir?"),
     ])
     extracted = {}
     r = run_turn([{"role": "user", "content": "soy Marta"}], extracted, client=client)
     assert extracted["full_name"] == "Marta"
     assert "carné" in r.reply
-    assert not r.completed
+    assert r.status == "pending" and not r.completed
 
 
-def test_complete_seals_verdict_via_python():
-    extracted = {"has_driver_license": True, "city": "Madrid / Centro"}
+def test_end_interview_completes_with_status_from_data():
+    extracted = {"has_driver_license": True, "city": "Madrid"}
     client = FakeClient([
-        _completion(tools=[_tool_call("complete_screening", {"summary": "apta"})]),
+        _completion(tools=[_tool_call("end_interview", {"summary": "apta"})]),
         _completion(text="¡Todo listo! El equipo te contactará."),
     ])
     r = run_turn([{"role": "user", "content": "confirmo"}], extracted, client=client)
-    assert r.completed and r.qualified is True
-
-
-def test_narrated_close_is_caught():
-    extracted = {"has_driver_license": False}
-    client = FakeClient([
-        _completion(text="Gracias. complete_screening(summary='sin carné')"),
-    ])
-    r = run_turn([{"role": "user", "content": "no tengo carné"}], extracted, client=client)
-    assert r.completed and r.qualified is False       # sealed despite narration
-    assert "complete_screening" not in r.reply        # stripped from the visible reply
+    assert r.completed and r.status == "qualified" and r.summary == "apta"
 
 
 def test_iteration_cap_falls_back():
     # A model that always asks for a tool never terminates → runner must bail gracefully.
     client = FakeClient([
-        _completion(tools=[_tool_call("flag_invalid", {"field": "x", "user_value": "y", "reason": "z"})])
+        _completion(tools=[_tool_call("save_answer", {"full_name": "Ana"})])
         for _ in range(10)
     ])
     r = run_turn([{"role": "user", "content": "hola"}], {}, client=client)

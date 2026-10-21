@@ -12,14 +12,12 @@ def main() -> None:
     history: list[dict] = []
     extracted: dict = {}
     print("Rita (escribe 'salir' para terminar)\n")
-    # Kick off with an empty user turn so Rita greets first.
-    history.append({"role": "user", "content": "Hola"})
-    while True:
+    while True:  # empty history → the fixed greeting, no model call
         r = run_turn(history, extracted, client=None)
         history.append({"role": "assistant", "content": r.reply})
         print(f"Rita › {r.reply}")
         if r.completed:
-            print(f"\n[cerrado · qualified={r.qualified}]\n{extracted}")
+            print(f"\n[cerrado · status={r.status}]\n{r.summary}\n{extracted}")
             return
         user = input("Tú  › ").strip()
         if user.lower() in {"salir", "exit", "quit"}:

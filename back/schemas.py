@@ -1,39 +1,46 @@
-"""Pydantic contracts for the four agent tools and the extracted-field store.
+"""Pydantic contracts for the two agent tools (ADR-014, ADR-015).
 
-The LLM fills these via tool calls; handlers (tools.py) validate the values
-the LLM can't check itself (city in service area, date in the future, yes/no).
+The model turns the candidate's words into typed values; these models check the
+types. The OpenAI tool schemas are generated from them, so the contract the
+model sees and the validation Python runs can never drift apart.
 """
 from __future__ import annotations
 
+from datetime import date
 from typing import Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
-Field7 = Literal[
-    "full_name", "has_driver_license", "city", "availability",
-    "preferred_schedule", "prior_experience", "start_date", "contact_email",
-]
-
-# The same 8 names as a plain list, for building the OpenAI tool schema.
-FIELD_NAMES: list[str] = list(Field7.__args__)
+Availability = Literal["full_time", "part_time", "weekends"]
+Schedule = Literal["morning", "afternoon", "evening", "flexible"]
 
 
-class RecordFieldArgs(BaseModel):
-    field: Field7
-    value: str = Field(min_length=1)
-    confidence: float = Field(ge=0, le=1)
+class Experience(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    years: int = Field(ge=0, le=80)
+    platforms: list[str] = Field(description="Glovo, Uber Eats, ... Empty list = none.")
 
 
-class FlagInvalidArgs(BaseModel):
-    field: str
-    user_value: str
-    reason: str
+class SaveAnswerArgs(BaseModel):
+    """Every field optional: send only what the candidate just answered."""
+    model_config = ConfigDict(extra="forbid")
+    full_name: str | None = Field(None, min_length=1, max_length=120)
+    has_driver_license: bool | None = None
+    city: str | None = Field(None, min_length=1, description="City as the candidate said it.")
+    availability: list[Availability] | None = Field(None, min_length=1)
+    preferred_schedule: list[Schedule] | None = Field(None, min_length=1)
+    prior_experience: Experience | None = None
+    start_date: date | None = Field(None, description="ISO yyyy-mm-dd, today or later.")
+    contact_email: str | None = Field(None, min_length=3)
+
+    @field_validator("start_date")
+    @classmethod
+    def _not_in_the_past(cls, v: date | None) -> date | None:
+        if v is not None and v < date.today():
+            raise ValueError("start date must be today or later")
+        return v
 
 
-class DisqualifyArgs(BaseModel):
-    reason: Literal["no_license", "out_of_service_area"]
-    detail: str
-
-
-class CompleteScreeningArgs(BaseModel):
-    summary: str
+class EndInterviewArgs(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    summary: str = Field(min_length=1, description="2-3 sentences for the recruiter.")
