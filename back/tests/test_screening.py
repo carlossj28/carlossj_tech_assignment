@@ -36,9 +36,18 @@ def test_license_accepts_only_yes_or_no():
     assert e["has_driver_license"] is False
 
 
+def test_license_accepts_common_yes_no_tokens():
+    # Tolerates format variations of a yes/no token, compared as the whole value.
+    for raw, expected in [("sí", True), ("Si", True), ("1", True), ("true", True),
+                          ("no", False), ("0", False), ("false", False)]:
+        e: dict = {}
+        dispatch("record_field", e, {"field": "has_driver_license", "value": raw, "confidence": 0.9})
+        assert e["has_driver_license"] is expected, raw
+
+
 def test_license_raw_text_is_rejected_not_guessed():
     # Free text (even "Sí, desde noviembre") is never parsed: the model must send yes/no.
-    for raw in ["Sí, desde noviembre", "no tengo", "true"]:
+    for raw in ["Sí, desde noviembre", "no tengo", "sí y no"]:
         e: dict = {}
         r = dispatch("record_field", e, {"field": "has_driver_license", "value": raw, "confidence": 0.9})
         assert r["ok"] is False and "has_driver_license" not in e, raw

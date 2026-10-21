@@ -96,8 +96,12 @@ OPENAI_TOOL_SCHEMAS: list[dict[str, Any]] = [
 # ── Value normalization (the checks the LLM can't do itself) ────────────────────
 
 # The model interprets the candidate ("Sí, desde noviembre") and sends yes/no;
-# Python only checks the type. Anything else is rejected, never guessed.
-_LICENSE = {"yes": True, "no": False}
+# Python only checks the type. Common spellings of a yes/no token are accepted,
+# always as the whole value; anything else is rejected, never guessed.
+_LICENSE = {
+    "yes": True, "si": True, "sí": True, "true": True, "1": True,
+    "no": False, "false": False, "0": False,
+}
 
 
 def _normalize(field: str, raw: str) -> Any | None:
