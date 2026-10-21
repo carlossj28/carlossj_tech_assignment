@@ -1,13 +1,18 @@
+/* Dimension-inspired tokens: matte dark canvas, frosted panels, white pills, one violet wash. Dark only. */
 :root {
-  --bg: #ffffff;
-  --fg: #1c1914;
-}
+  --canvas: #0a0a0a;
+  --graphite: #161616;
+  --frost: rgba(212, 212, 212, 0.1);
+  --hairline: rgba(229, 229, 229, 0.16);
+  --white: #ffffff;
+  --bone: #ededed;
+  --ash: #c2c2c2;
+  --slate: #686868;
+  --violet-wash: rgba(107, 98, 242, 0.565);
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #0a0a0a;
-    --fg: #ededed;
-  }
+  --radius-card: 40px;
+  --radius-bubble: 20px;
+  --radius-pill: 9999px;
 }
 
 * {
@@ -20,8 +25,11 @@ body {
   padding: 0;
   max-width: 100vw;
   overflow-x: hidden;
-  background: var(--bg);
-  color: var(--fg);
+  background: var(--canvas);
+  color: var(--bone);
+  font-family: var(--font-body), sans-serif;
+  font-weight: 400;
+  color-scheme: dark;
 }
 
 a {

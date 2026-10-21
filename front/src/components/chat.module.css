@@ -1,0 +1,184 @@
+.page {
+  position: relative;
+  isolation: isolate;
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 64px 16px 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 40px;
+  min-height: 100dvh;
+}
+
+/* The style's only colour: a soft violet wash behind the headline. */
+.page::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto;
+  height: 360px;
+  background: radial-gradient(50% 60% at 50% 0%, var(--violet-wash), transparent);
+  opacity: 0.45;
+  pointer-events: none;
+  z-index: -1;
+}
+
+.header {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.title {
+  margin: 0;
+  font-family: var(--font-display), sans-serif;
+  font-weight: 500;
+  font-size: clamp(44px, 9vw, 72px);
+  line-height: 1;
+  letter-spacing: -0.035em;
+  color: var(--white);
+}
+
+.lead {
+  margin: 0;
+  font-size: 18px;
+  line-height: 1.5;
+  color: var(--ash);
+}
+
+.tag {
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-pill);
+  padding: 6px 14px;
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0.025em;
+  color: var(--bone);
+}
+
+.card {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  background: var(--frost);
+  backdrop-filter: blur(4px);
+  border-radius: var(--radius-card);
+  padding: 20px;
+  min-height: 480px;
+}
+
+.messages {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  overflow-y: auto;
+  max-height: 60dvh;
+}
+
+.bubble {
+  margin: 0;
+  max-width: 80%;
+  padding: 12px 18px;
+  border-radius: var(--radius-bubble);
+  font-size: 16px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+}
+
+.rita {
+  align-self: flex-start;
+  background: var(--graphite);
+  box-shadow: inset 0 0 0 1px var(--hairline);
+}
+
+.candidate {
+  align-self: flex-end;
+  background: var(--white);
+  color: var(--graphite);
+}
+
+.typing {
+  margin: 0;
+  font-size: 13px;
+  color: var(--slate);
+}
+
+.error {
+  margin: 0;
+  font-size: 14px;
+  color: var(--ash);
+}
+
+.error button {
+  font: inherit;
+  color: var(--white);
+  background: none;
+  border: none;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.composer {
+  display: flex;
+  gap: 8px;
+  padding: 6px;
+  background: var(--graphite);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-pill);
+}
+
+.composer:focus-within {
+  border-color: var(--ash);
+}
+
+.input {
+  flex: 1;
+  min-width: 0;
+  font: inherit;
+  font-size: 16px;
+  color: var(--bone);
+  background: transparent;
+  border: none;
+  padding: 8px 14px;
+  outline: none;
+}
+
+.input::placeholder {
+  color: var(--slate);
+}
+
+.send {
+  font: inherit;
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--graphite);
+  background: var(--white);
+  border: none;
+  border-radius: var(--radius-pill);
+  padding: 8px 18px;
+  cursor: pointer;
+}
+
+.send:disabled,
+.input:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.done {
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  font-size: 15px;
+  color: var(--ash);
+}
+
+@media (min-width: 640px) {
+  .card {
+    padding: 28px;
+  }
+}

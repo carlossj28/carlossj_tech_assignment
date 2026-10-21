@@ -22,6 +22,7 @@ cd back && uv run pytest        # tests
 
 # Front  (http://localhost:3000)
 cd front && npm install && npm run dev
+cd front && npm test           # e2e del chat (Playwright, back simulado)
 ```
 
 ## Despliegue
