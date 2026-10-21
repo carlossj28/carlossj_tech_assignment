@@ -27,12 +27,30 @@ def test_record_city_rejects_unknown():
     assert r == {"ok": False, "validation_error": "City not in a service area."}
 
 
-def test_license_yes_no_negatives_win():
+def test_license_accepts_only_yes_or_no():
+    # The model interprets the candidate's words; Python only checks the type.
     e: dict = {}
-    dispatch("record_field", e, {"field": "has_driver_license", "value": "no tengo", "confidence": 0.9})
-    assert e["has_driver_license"] is False
-    dispatch("record_field", e, {"field": "has_driver_license", "value": "claro que sí", "confidence": 0.9})
+    dispatch("record_field", e, {"field": "has_driver_license", "value": "yes", "confidence": 0.9})
     assert e["has_driver_license"] is True
+    dispatch("record_field", e, {"field": "has_driver_license", "value": " No ", "confidence": 0.9})
+    assert e["has_driver_license"] is False
+
+
+def test_license_accepts_common_yes_no_tokens():
+    # Tolerates format variations of a yes/no token, compared as the whole value.
+    for raw, expected in [("sí", True), ("Si", True), ("1", True), ("true", True),
+                          ("no", False), ("0", False), ("false", False)]:
+        e: dict = {}
+        dispatch("record_field", e, {"field": "has_driver_license", "value": raw, "confidence": 0.9})
+        assert e["has_driver_license"] is expected, raw
+
+
+def test_license_raw_text_is_rejected_not_guessed():
+    # Free text (even "Sí, desde noviembre") is never parsed: the model must send yes/no.
+    for raw in ["Sí, desde noviembre", "no tengo", "sí y no"]:
+        e: dict = {}
+        r = dispatch("record_field", e, {"field": "has_driver_license", "value": raw, "confidence": 0.9})
+        assert r["ok"] is False and "has_driver_license" not in e, raw
 
 
 def test_start_date_future_only():
