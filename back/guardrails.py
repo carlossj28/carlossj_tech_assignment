@@ -16,7 +16,8 @@ _INJECTION = re.compile(
     r"(ignora (?:las|todas)|olvida (?:las|tus)|act[úu]a como|you are now|ignore (?:all|previous)|system prompt)",
     re.IGNORECASE,
 )
-_PHONE = re.compile(r"(?:\+?\d[\s-]?){7,}")
+# 9+ digits (ES/MX phones), so an ISO date (8 digits) or a year is never redacted.
+_PHONE = re.compile(r"\+?\d(?:[\s.-]?\d){8,}")
 
 # Short, scope-reconducting replies when input is blocked (ES default / EN).
 _REFUSAL = {

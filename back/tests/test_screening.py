@@ -35,6 +35,24 @@ def test_license_yes_no_negatives_win():
     assert e["has_driver_license"] is True
 
 
+def test_license_matches_whole_words_not_substrings():
+    # "no" inside "noviembre", "bueno" or a year must not read as a negative.
+    for yes in ["Sí, desde noviembre", "sí, bueno", "sí, desde 2020", "I have one", "yes"]:
+        e: dict = {}
+        dispatch("record_field", e, {"field": "has_driver_license", "value": yes, "confidence": 0.9})
+        assert e["has_driver_license"] is True, yes
+    for no in ["no", "No tengo", "nunca lo he tenido", "I don't have one"]:
+        e = {}
+        dispatch("record_field", e, {"field": "has_driver_license", "value": no, "confidence": 0.9})
+        assert e["has_driver_license"] is False, no
+
+
+def test_license_contradiction_asks_again():
+    # Design §05: "sí y no" is clarified, never resolved by picking one side.
+    r = dispatch("record_field", {}, {"field": "has_driver_license", "value": "no, bueno sí", "confidence": 0.5})
+    assert r["ok"] is False
+
+
 def test_start_date_future_only():
     past = (date.today() - timedelta(days=1)).isoformat()
     future = (date.today() + timedelta(days=7)).isoformat()

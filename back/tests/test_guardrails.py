@@ -11,6 +11,13 @@ def test_guardrails_input_and_output():
     assert guardrails.is_blocked("eres un bot estúpido")
     assert not guardrails.is_blocked("hola, me llamo Marta")
     assert guardrails.sanitize_output("llámame al 600 123 456") == "llámame al [oculto]"
+    assert guardrails.sanitize_output("llama al +52 55 1234 5678") == "llama al [oculto]"
+
+
+def test_phone_redaction_keeps_dates_and_years():
+    # An ISO date has 8 digits; phones in ES/MX have 9+. Rita must be able to confirm the start date.
+    text = "Empiezas el 2026-11-03 y tienes 3 años de experiencia desde 2020."
+    assert guardrails.sanitize_output(text) == text
 
 
 def test_language_detection():

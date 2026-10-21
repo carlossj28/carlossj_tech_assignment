@@ -10,6 +10,7 @@ same handlers run for both transports (see propuesta-tecnica §03).
 """
 from __future__ import annotations
 
+import re
 from datetime import date
 from typing import Any, Callable
 
@@ -93,18 +94,21 @@ OPENAI_TOOL_SCHEMAS: list[dict[str, Any]] = [
 
 # ── Value normalization (the checks the LLM can't do itself) ────────────────────
 
-_YES = {"si", "sí", "yes", "true", "1", "claro", "tengo", "por supuesto"}
-_NO = {"no", "false", "0", "nunca", "no tengo"}
+# Whole words, never substrings: "no" must not fire inside "noviembre" or "bueno".
+_YES = {"si", "sí", "yes", "yeah", "true", "claro", "tengo", "supuesto", "have"}
+_NO = {"no", "nope", "not", "dont", "false", "nunca", "never"}
+# Explicit affirmations: next to a negative they make the answer contradictory.
+_STRONG_YES = {"si", "sí", "yes", "yeah", "claro"}
 
 
 def _normalize(field: str, raw: str) -> Any | None:
     """Coerce a raw LLM string into a typed value, or None if invalid."""
     v = raw.strip()
     if field == "has_driver_license":
-        low = v.lower()
-        if any(t in low for t in _NO):   # negatives first: "no tengo" must beat "tengo"
-            return False
-        if any(t in low for t in _YES):
+        words = set(re.findall(r"\w+", v.lower().replace("'", "")))
+        if words & _NO:                  # negatives first: "no tengo" must beat "tengo"
+            return None if words & _STRONG_YES else False   # "no, bueno sí" → ask again
+        if words & _YES:
             return True
         return None
     if field == "city":
