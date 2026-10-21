@@ -65,3 +65,26 @@ def test_iteration_cap_falls_back():
     ])
     r = run_turn([{"role": "user", "content": "hola"}], {}, client=client)
     assert "problema técnico" in r.reply
+
+
+def test_model_sees_saved_data_and_text_only_history():
+    seen = {}
+
+    def create(**kw):
+        seen["messages"] = kw["messages"]
+        return _completion(text="¿En qué ciudad vives?")
+
+    client = SimpleNamespace(chat=SimpleNamespace(completions=SimpleNamespace(create=create)))
+    run_turn([{"role": "assistant", "content": "¿Carné?"}, {"role": "user", "content": "sí"}],
+             {"has_driver_license": True}, client=client)
+    data_line = seen["messages"][1]
+    assert data_line["role"] == "system" and '"has_driver_license": true' in data_line["content"]
+    assert [m["role"] for m in seen["messages"][2:4]] == ["assistant", "user"]
+
+
+def test_malformed_tool_args_dont_crash_the_turn():
+    bad = SimpleNamespace(id="c_bad", function=SimpleNamespace(name="save_answer", arguments="{not json"))
+    client = FakeClient([_completion(tools=[bad]), _completion(text="Perdona, ¿me lo repites?")])
+    r = run_turn([{"role": "user", "content": "hola"}], {}, client=client)
+    assert r.reply == "Perdona, ¿me lo repites?"
+    assert r.tool_calls[0]["result"]["ok"] is False

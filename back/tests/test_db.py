@@ -1,4 +1,4 @@
-"""P2 integration: real Postgres round-trip. Skipped unless DATABASE_URL is set.
+"""Postgres round-trip for the turn write path. Skipped unless DATABASE_URL is set.
 
 Run locally:  docker compose up -d
               DATABASE_URL=postgresql://sazon:sazon@localhost:5432/sazon \
@@ -7,6 +7,8 @@ Run locally:  docker compose up -d
 import os
 
 import pytest
+
+from runner import TurnResult
 
 pytestmark = pytest.mark.skipif(
     not os.getenv("DATABASE_URL"), reason="needs Postgres (docker compose up -d)"
@@ -20,26 +22,26 @@ def _db():
     return db
 
 
-def test_roundtrip_and_rehydrate(_db):
-    cid = _db.start_conversation("chat")
-    _db.save_extracted(cid, {"full_name": "Ana", "has_driver_license": True, "city": "Madrid / Centro"})
-    _db.append_turn(cid, "user", "soy Ana, tengo carné")
+def test_turn_roundtrip(_db):
+    cid = _db.start_conversation("chat", "¡Hola!")
+    result = TurnResult(reply="¿En qué ciudad?", extracted={"full_name": "Ana", "has_driver_license": True},
+                        tool_calls=[{"name": "save_answer", "args": {}, "result": {"ok": True}}])
+    with _db.pool().connection() as conn:
+        conv = _db.lock_conversation(conn, cid)
+        _db.save_turn(conn, conv["id"], "soy Ana, tengo carné", result)
 
-    conv = _db.get_conversation(cid)                 # the rehydrate read voice relies on
+    conv = _db.get_conversation(cid)                  # the rehydrate read voice relies on
     assert conv["candidate_name"] == "Ana"
-    assert conv["extracted_fields"]["city"] == "Madrid / Centro"
-    assert conv["status"] == "in_progress"
-    assert len(_db.get_turns(cid)) == 1
+    assert conv["extracted_fields"]["has_driver_license"] is True
+    with _db.pool().connection() as conn:
+        history = _db.get_history(conn, cid)
+    assert [t["role"] for t in history] == ["assistant", "user", "assistant"]
+    assert _db.get_turns(cid)[2]["tool_calls"][0]["name"] == "save_answer"  # audit kept
 
 
-def test_close_is_idempotent_advance_only(_db):
-    cid = _db.start_conversation("voice")
-    first = _db.close_conversation(
-        cid, outcome="qualified", qualified=True, reason=None, closed_by="confirm", summary="ok"
-    )
-    second = _db.close_conversation(
-        cid, outcome="review", qualified=None, reason=None, closed_by="idle", summary="late sweep"
-    )
-    assert first is True            # first trigger seals
-    assert second is False          # late trigger is a no-op
-    assert _db.get_conversation(cid)["outcome"] == "qualified"  # not degraded
+def test_lock_is_exclusive(_db):
+    cid = _db.start_conversation("chat", "¡Hola!")
+    with _db.pool().connection() as holder:
+        _db.lock_conversation(holder, cid)
+        with _db.pool().connection() as other, pytest.raises(_db.Busy):
+            _db.lock_conversation(other, cid)

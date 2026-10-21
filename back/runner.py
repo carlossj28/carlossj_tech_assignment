@@ -2,7 +2,7 @@
 
 The model drives: it calls tools, we run the handlers (tools.py) against the
 in-memory `extracted` dict, feed results back, and loop until it replies with
-text. P4a is in-memory; P5 wraps this with load-from / save-to Postgres.
+text. Stateless: chat.py loads history + data from Postgres and saves the result.
 
 Testability with zero noise: `run_turn` takes the OpenAI client as an argument
 (default = the real one). Tests pass a fake; nothing else in here knows.
@@ -36,6 +36,7 @@ class TurnResult:
     tool_calls: list[dict] = field(default_factory=list)
     completed: bool = False
     status: str = "pending"        # computed from the data, never by the model (ADR-017)
+    knockout: str | None = None
     summary: str | None = None
 
 
@@ -53,7 +54,8 @@ def run_turn(history: list[dict], extracted: dict, *, client=None) -> TurnResult
         return TurnResult(reply=GREETING, extracted=extracted)
     user_msg = history[-1]["content"]
     lang = language.detect(user_msg)
-    result = TurnResult(reply="", extracted=extracted, status=screening_status(extracted)[0])
+    result = TurnResult(reply="", extracted=extracted)
+    result.status, result.knockout = screening_status(extracted)
 
     # Input guardrail: block abuse/injection before spending a model call.
     if guardrails.is_blocked(user_msg):
@@ -61,8 +63,10 @@ def run_turn(history: list[dict], extracted: dict, *, client=None) -> TurnResult
         return result
 
     client = client or _default_client()
-    # Language-override goes last so it wins over the prompt for this turn.
-    messages = [{"role": "system", "content": SYSTEM_PROMPT}, *history,
+    # Text-only history + what is already saved (ADR-025); the language override
+    # goes last so it wins over the prompt for this turn.
+    messages = [{"role": "system", "content": SYSTEM_PROMPT},
+                {"role": "system", "content": _saved_data(extracted)}, *history,
                 {"role": "system", "content": language.override(lang)}]
 
     for _ in range(_MAX_ITERS):
@@ -73,7 +77,7 @@ def run_turn(history: list[dict], extracted: dict, *, client=None) -> TurnResult
 
         if not msg.tool_calls:
             result.reply = guardrails.sanitize_output(msg.content or "")
-            result.status = screening_status(extracted)[0]
+            result.status, result.knockout = screening_status(extracted)
             return result
 
         messages.append({"role": "assistant", "content": msg.content, "tool_calls": [
@@ -82,22 +86,32 @@ def run_turn(history: list[dict], extracted: dict, *, client=None) -> TurnResult
             for tc in msg.tool_calls
         ]})
         for tc in msg.tool_calls:
-            args = json.loads(tc.function.arguments or "{}")
-            out = dispatch(tc.function.name, extracted, args)
+            try:
+                args = json.loads(tc.function.arguments or "{}")
+                out = dispatch(tc.function.name, extracted, args)
+            except json.JSONDecodeError:  # model sent broken JSON: tell it, don't crash the turn
+                args, out = {}, {"ok": False, "validation_error": "arguments are not valid JSON"}
             result.tool_calls.append({"name": tc.function.name, "args": args, "result": out})
             if tc.function.name == "end_interview" and out.get("ok"):
                 result.completed, result.summary = True, args["summary"]
             messages.append({"role": "tool", "tool_call_id": tc.id, "content": json.dumps(out)})
 
     result.reply = "Disculpa, tuve un problema técnico. ¿Puedes repetirlo?"
-    result.status = screening_status(extracted)[0]
+    result.status, result.knockout = screening_status(extracted)
     return result
 
 
-_NUDGE = {
+def _saved_data(extracted: dict) -> str:
+    return "Datos ya guardados de este candidato (no los vuelvas a preguntar): " + (
+        json.dumps(extracted, ensure_ascii=False) if extracted else "ninguno todavía")
+
+
+_NUDGE = {  # up to 3 per silence (ADR-026)
     1: "El candidato lleva un rato sin responder. Hazle un recordatorio MUY breve "
        "(una frase) en su idioma, retomando la última pregunta. No saludes de nuevo. No uses herramientas.",
-    2: "Segundo y último aviso. Dile en una frase, con amabilidad, que puede escribir "
+    2: "Sigue sin responder. Retoma la última pregunta en una frase, con otras palabras "
+       "que el recordatorio anterior. No saludes. No uses herramientas.",
+    3: "Último aviso. Dile en una frase, con amabilidad, que puede escribir "
        "cuando quiera y que dejas la pregunta abierta. No saludes. No uses herramientas.",
 }
 

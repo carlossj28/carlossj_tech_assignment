@@ -1,18 +1,22 @@
 """Postgres access: a small pool + the handful of queries the app needs.
 
 SQL plano con psycopg3, sin ORM: tres tablas y queries simples no justifican
-una capa de mapeo. The close() helper implements the idempotent "advance-only"
-seal from propuesta-tecnica §06.
+una capa de mapeo.
 """
 from __future__ import annotations
 
 import json
 import os
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
+from uuid import UUID
 
+from psycopg import Connection, errors
 from psycopg.rows import dict_row
 from psycopg_pool import ConnectionPool
+
+if TYPE_CHECKING:
+    from runner import TurnResult
 
 _pool: ConnectionPool | None = None
 _MIGRATION = Path(__file__).resolve().parent / "migrations" / "0001_initial.sql"
@@ -36,62 +40,88 @@ def init_db() -> None:
 
 
 # ── Conversations ───────────────────────────────────────────────────────────
+# A chat/voice turn runs inside ONE transaction holding the row lock (ADR-024):
+# lock_conversation → get_history → (agent) → save_turn. The functions below take
+# that open connection; nothing is written unless the whole turn succeeds.
 
-def start_conversation(source: str) -> str:
+class Busy(Exception):
+    """Another turn holds this conversation's lock."""
+
+
+def start_conversation(source: str, greeting: str) -> str:
+    """New conversation with Rita's fixed greeting as its first turn (ADR-012)."""
     with pool().connection() as conn:
-        row = conn.execute(
+        cid = conn.execute(
             "INSERT INTO conversations (source) VALUES (%s) RETURNING id", (source,)
+        ).fetchone()[0]
+        conn.execute(
+            "INSERT INTO turns (conversation_id, role, content) VALUES (%s, 'assistant', %s)",
+            (cid, greeting),
+        )
+    return str(cid)
+
+
+def lock_conversation(conn: Connection, cid: UUID) -> dict[str, Any] | None:
+    """The conversation row, locked until the transaction ends. None if it doesn't
+    exist; Busy if another turn holds it (we fail fast instead of queueing)."""
+    try:
+        return conn.cursor(row_factory=dict_row).execute(
+            "SELECT * FROM conversations WHERE id = %s FOR UPDATE NOWAIT", (cid,)
         ).fetchone()
-    return str(row[0])
+    except errors.LockNotAvailable as e:
+        raise Busy from e
+
+
+def get_history(conn: Connection, cid: UUID) -> list[dict[str, str]]:
+    """The transcript as the model sees it: text only, tools left out (ADR-025)."""
+    return conn.cursor(row_factory=dict_row).execute(
+        "SELECT role, content FROM turns WHERE conversation_id = %s ORDER BY id", (cid,)
+    ).fetchall()
+
+
+def save_turn(conn: Connection, cid: UUID, message: str, result: TurnResult) -> None:
+    """The candidate's message, Rita's reply with the tools it ran, and the data +
+    status after the turn. A candidate message resets the nudge count (ADR-026)
+    and reopens a closed interview unless Rita closes it again now (ADR-028)."""
+    conn.execute(
+        "INSERT INTO turns (conversation_id, role, content) VALUES (%s, 'user', %s)", (cid, message)
+    )
+    conn.execute(
+        "INSERT INTO turns (conversation_id, role, content, tool_calls) "
+        "VALUES (%s, 'assistant', %s, %s)",
+        (cid, result.reply, json.dumps(result.tool_calls) if result.tool_calls else None),
+    )
+    conn.execute(
+        """UPDATE conversations
+              SET extracted_fields = %s, candidate_name = %s, screening_status = %s,
+                  knockout_reason = %s, completed = %s, summary = COALESCE(%s, summary),
+                  nudge_count = 0, last_activity_at = now()
+            WHERE id = %s""",
+        (json.dumps(result.extracted), result.extracted.get("full_name"), result.status,
+         result.knockout, result.completed, result.summary, cid),
+    )
+
+
+def save_nudge(conn: Connection, cid: UUID, reply: str) -> None:
+    """Rita's reminder after a silence. Not candidate activity: last_activity_at stays."""
+    conn.execute(
+        "INSERT INTO turns (conversation_id, role, content) VALUES (%s, 'assistant', %s)", (cid, reply)
+    )
+    conn.execute("UPDATE conversations SET nudge_count = nudge_count + 1 WHERE id = %s", (cid,))
 
 
 def get_conversation(cid: str) -> dict[str, Any] | None:
     with pool().connection() as conn:
-        conn.row_factory = dict_row
-        return conn.execute("SELECT * FROM conversations WHERE id = %s", (cid,)).fetchone()
-
-
-def save_extracted(cid: str, extracted: dict[str, Any]) -> None:
-    """Persist the field store after a tool call (incremental persistence).
-    Mirrors full_name into candidate_name for cheap recruiter listing."""
-    with pool().connection() as conn:
-        conn.execute(
-            "UPDATE conversations SET extracted_fields = %s, candidate_name = %s WHERE id = %s",
-            (json.dumps(extracted), extracted.get("full_name"), cid),
-        )
-
-
-def close_conversation(
-    cid: str, *, outcome: str, qualified: bool | None, reason: str | None,
-    closed_by: str, summary: str | None,
-) -> bool:
-    """Seal the verdict. Advance-only: only an in_progress row transitions, so
-    the first trigger wins and late ones are no-ops. Returns True iff we sealed it."""
-    with pool().connection() as conn:
-        cur = conn.execute(
-            """UPDATE conversations
-                  SET status='closed', outcome=%s, qualified=%s,
-                      disqualification_reason=%s, closed_by=%s, summary=%s, ended_at=now()
-                WHERE id=%s AND status='in_progress'""",
-            (outcome, qualified, reason, closed_by, summary, cid),
-        )
-        return cur.rowcount == 1
+        return conn.cursor(row_factory=dict_row).execute(
+            "SELECT * FROM conversations WHERE id = %s", (cid,)
+        ).fetchone()
 
 
 # ── Turns (append-only transcript) ────────────────────────────────────────────
 
-def append_turn(cid: str, role: str, content: str | None, tool_calls: list | None = None) -> None:
-    with pool().connection() as conn:
-        conn.execute(
-            "INSERT INTO turns (conversation_id, role, content, tool_calls) VALUES (%s, %s, %s, %s)",
-            (cid, role, content, json.dumps(tool_calls) if tool_calls else None),
-        )
-
-
 def get_turns(cid: str) -> list[dict[str, Any]]:
     with pool().connection() as conn:
-        conn.row_factory = dict_row
-        return conn.execute(
+        return conn.cursor(row_factory=dict_row).execute(
             "SELECT role, content, tool_calls, created_at FROM turns WHERE conversation_id=%s ORDER BY id",
             (cid,),
         ).fetchall()
@@ -107,8 +137,7 @@ def get_turns_count_any() -> int:
 
 def get_recruiter(username: str) -> dict[str, Any] | None:
     with pool().connection() as conn:
-        conn.row_factory = dict_row
-        return conn.execute(
+        return conn.cursor(row_factory=dict_row).execute(
             "SELECT username, password_hash FROM recruiters WHERE username = %s", (username,)
         ).fetchone()
 
