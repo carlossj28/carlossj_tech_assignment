@@ -1,0 +1,24 @@
+# Railway monorepo: two services, each rooted at its subdir.
+# Postgres is added as a plugin from the Railway dashboard (injects DATABASE_URL).
+
+[[services]]
+name = "back"
+root = "back"
+
+[services.build]
+builder = "dockerfile"
+dockerfilePath = "Dockerfile"
+
+[services.deploy]
+healthcheckPath = "/health"
+restartPolicyType = "on_failure"
+
+[[services]]
+name = "front"
+root = "front"
+
+[services.build]
+builder = "nixpacks"
+
+[services.deploy]
+restartPolicyType = "on_failure"

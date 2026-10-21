@@ -1,0 +1,17 @@
+# Local Postgres for development and integration tests.
+# Start:  docker compose up -d
+# Then:   DATABASE_URL=postgresql://sazon:sazon@localhost:5432/sazon
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: sazon
+      POSTGRES_PASSWORD: sazon
+      POSTGRES_DB: sazon
+    ports:
+      - "5432:5432"
+    volumes:
+      - sazon_pgdata:/var/lib/postgresql/data
+
+volumes:
+  sazon_pgdata:
