@@ -6,7 +6,9 @@ export type Message = { role: "rita" | "candidate"; text: string };
 // Pure view of the conversation; voice will reuse it for the live transcript.
 export default function MessageList({ messages, typing }: { messages: Message[]; typing: boolean }) {
   const end = useRef<HTMLDivElement>(null);
-  useEffect(() => end.current?.scrollIntoView({ block: "end" }), [messages, typing]);
+  useEffect(() => {
+    end.current?.scrollIntoView({ block: "end" });
+  }, [messages, typing]);
 
   return (
     <div className={styles.messages} aria-live="polite">
