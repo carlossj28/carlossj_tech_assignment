@@ -81,10 +81,16 @@ test("silence triggers reminders, and stops when the back says no more", async (
   await expect(page.locator('[data-role="rita"]')).toHaveCount(4);
 });
 
-test("a completed interview locks the input", async ({ page }) => {
-  await mockBack(page, { message: () => ({ reply: "¡Listo, gracias!", completed: true, status: "qualified" }) });
+test("a completed interview shows the tag and a new message reopens it", async ({ page }) => {
+  let completed = true;
+  await mockBack(page, { message: () => ({ reply: "Respuesta", completed, status: "qualified" }) });
   await page.goto("/");
   await send(page, "Sí, confirmo");
   await expect(page.getByText("Entrevista completada")).toBeVisible();
-  await expect(page.getByLabel("Tu respuesta")).toHaveCount(0);
+  await expect(page.getByLabel("Tu respuesta")).toBeEnabled();
+
+  completed = false;
+  await send(page, "Perdona, vivo en Madrid");
+  await expect(page.locator('[data-role="rita"]')).toHaveCount(3);
+  await expect(page.getByText("Entrevista completada")).toHaveCount(0);
 });

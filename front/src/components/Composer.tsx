@@ -22,6 +22,7 @@ export default function Composer({ disabled, onSend }: { disabled: boolean; onSe
         placeholder="Escribe tu respuesta…"
         aria-label="Tu respuesta"
         disabled={disabled}
+        maxLength={2000} // back rejects longer messages (422)
         autoFocus
       />
       <button className={styles.send} type="submit" disabled={disabled || !text.trim()}>

@@ -86,13 +86,13 @@ export default function Chat() {
             {error} {!conversationId && <button onClick={start}>Reintentar</button>}
           </p>
         )}
-        {completed ? (
+        {completed && (
           <p className={styles.done}>
             <span className={styles.tag}>Entrevista completada</span> Gracias, un reclutador revisará tu candidatura.
           </p>
-        ) : (
-          <Composer disabled={!conversationId || typing} onSend={send} />
         )}
+        {/* Stays enabled after completion: a new message reopens the conversation (ADR-028). */}
+        <Composer disabled={!conversationId || typing} onSend={send} />
       </section>
     </main>
   );
