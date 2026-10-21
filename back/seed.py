@@ -9,26 +9,24 @@ import os
 
 import auth
 import db
+from runner import TurnResult
+from tools import screening_status
 
-_DEMO = [
-    dict(source="chat", outcome="qualified", qualified=True, closed_by="confirm",
-         name="Marta Gil",
+_DEMO = [  # one exchange each, written through the real save path
+    dict(source="chat", rita="¿Tienes carné de conducir y en qué ciudad vives?",
+         user="Sí, desde noviembre. Vivo en Madrid", reply="¡Genial! Ya lo tengo todo. ¡Gracias, Marta!",
          fields={"full_name": "Marta Gil", "has_driver_license": True, "city": "Madrid",
                  "availability": ["full_time"], "preferred_schedule": ["morning"],
                  "prior_experience": {"years": 2, "platforms": ["Glovo"]}, "start_date": "2026-11-03"},
-         summary="Repartidora con coche y 2 años en Glovo; Madrid; jornada completa.",
-         turns=[("assistant", "¡Hola! Soy Rita 👋 ¿Cómo te llamas?"),
-                ("user", "Marta, tengo coche y vivo en Arganzuela")]),
-    dict(source="chat", outcome="disqualified", qualified=False, reason="no_license", closed_by="confirm",
-         name="Jorge Ruiz",
+         completed=True, summary="Repartidora con 2 años en Glovo; Madrid; jornada completa."),
+    dict(source="chat", rita="¿Tienes carné de conducir?", user="No, todavía no",
+         reply="Gracias, Jorge. Para este puesto el carné es imprescindible.",
          fields={"full_name": "Jorge Ruiz", "has_driver_license": False},
-         summary="Sin carné de conducir; descartado.",
-         turns=[("assistant", "¿Tienes carné de conducir?"), ("user", "No, todavía no")]),
-    dict(source="voice", outcome="review", qualified=None, closed_by="hangup",
-         name="Elena Sanz",
+         completed=True, summary="Sin carné de conducir; descartado."),
+    dict(source="voice", rita="¿En qué ciudad te gustaría trabajar?", user="En Ciudad de México",
+         reply="¡Perfecto! ¿Qué disponibilidad tienes?",
          fields={"full_name": "Elena Sanz", "has_driver_license": True, "city": "Ciudad de México"},
-         summary="Colgó antes de confirmar; datos completos pendientes de revisión.",
-         turns=[("assistant", "¿En qué zona te gustaría trabajar?"), ("user", "En Coyoacán")]),
+         completed=False, summary=None),  # hung up mid-call: qualified but inactive
 ]
 
 
@@ -44,15 +42,13 @@ def run() -> None:
     if db.get_turns_count_any():
         print("demo conversations already present, skipping")
         return
-    for d in _DEMO:
-        cid = db.start_conversation(d["source"])
-        db.save_extracted(cid, d["fields"])
-        for role, content in d["turns"]:
-            db.append_turn(cid, role, content)
-        db.close_conversation(
-            cid, outcome=d["outcome"], qualified=d["qualified"],
-            reason=d.get("reason"), closed_by=d["closed_by"], summary=d["summary"],
-        )
+    for d in _DEMO:  # same write path as a real turn
+        cid = db.start_conversation(d["source"], d["rita"])
+        status, knockout = screening_status(d["fields"])
+        result = TurnResult(reply=d["reply"], extracted=d["fields"], completed=d["completed"],
+                            status=status, knockout=knockout, summary=d["summary"])
+        with db.pool().connection() as conn:
+            db.save_turn(conn, cid, d["user"], result)
     print(f"seeded {len(_DEMO)} demo conversations")
 
 
