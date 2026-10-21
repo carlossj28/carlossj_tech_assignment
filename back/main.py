@@ -1,7 +1,7 @@
 """Grupo Sazon screening API. Entry point.
 
-Wires DB init on startup (when DATABASE_URL is set), recruiter auth endpoints,
-and /health. Agent and conversation endpoints land in later phases.
+Wires DB init on startup (when DATABASE_URL is set), the candidate chat router,
+recruiter auth endpoints and /health.
 """
 from __future__ import annotations
 
@@ -12,6 +12,7 @@ from fastapi import Depends, FastAPI, HTTPException, Response
 from pydantic import BaseModel
 
 import auth
+from chat import router as chat_router
 
 
 @asynccontextmanager
@@ -23,6 +24,7 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(title="Sazon Screening API", lifespan=lifespan)
+app.include_router(chat_router)
 
 
 @app.get("/health")
