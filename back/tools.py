@@ -10,7 +10,6 @@ same handlers run for both transports (see propuesta-tecnica §03).
 """
 from __future__ import annotations
 
-import re
 from datetime import date
 from typing import Any, Callable
 
@@ -29,7 +28,9 @@ OPENAI_TOOL_SCHEMAS: list[dict[str, Any]] = [
         "function": {
             "name": "record_field",
             "description": "Record one screening field. Server validates it; on "
-            "failure the result carries validation_error and you re-ask.",
+            "failure the result carries validation_error and you re-ask. "
+            "For has_driver_license send exactly 'yes' or 'no'; if the answer is "
+            "unclear or contradictory, ask again instead of recording it.",
             "parameters": {
                 "type": "object",
                 "additionalProperties": False,
@@ -94,23 +95,16 @@ OPENAI_TOOL_SCHEMAS: list[dict[str, Any]] = [
 
 # ── Value normalization (the checks the LLM can't do itself) ────────────────────
 
-# Whole words, never substrings: "no" must not fire inside "noviembre" or "bueno".
-_YES = {"si", "sí", "yes", "yeah", "true", "claro", "tengo", "supuesto", "have"}
-_NO = {"no", "nope", "not", "dont", "false", "nunca", "never"}
-# Explicit affirmations: next to a negative they make the answer contradictory.
-_STRONG_YES = {"si", "sí", "yes", "yeah", "claro"}
+# The model interprets the candidate ("Sí, desde noviembre") and sends yes/no;
+# Python only checks the type. Anything else is rejected, never guessed.
+_LICENSE = {"yes": True, "no": False}
 
 
 def _normalize(field: str, raw: str) -> Any | None:
     """Coerce a raw LLM string into a typed value, or None if invalid."""
     v = raw.strip()
     if field == "has_driver_license":
-        words = set(re.findall(r"\w+", v.lower().replace("'", "")))
-        if words & _NO:                  # negatives first: "no tengo" must beat "tengo"
-            return None if words & _STRONG_YES else False   # "no, bueno sí" → ask again
-        if words & _YES:
-            return True
-        return None
+        return _LICENSE.get(v.lower())
     if field == "city":
         return match_zone(v)             # canonical "City / Zone" or None
     if field == "start_date":
@@ -125,7 +119,7 @@ def _normalize(field: str, raw: str) -> Any | None:
 _ERRORS = {
     "city": "City not in a service area.",
     "start_date": "Start date must be today or later (ISO yyyy-mm-dd).",
-    "has_driver_license": "Could not read a clear yes/no.",
+    "has_driver_license": "Send exactly yes or no.",
 }
 
 # ── Handlers (pure: mutate `extracted`, return a result) ────────────────────────

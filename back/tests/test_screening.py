@@ -27,30 +27,21 @@ def test_record_city_rejects_unknown():
     assert r == {"ok": False, "validation_error": "City not in a service area."}
 
 
-def test_license_yes_no_negatives_win():
+def test_license_accepts_only_yes_or_no():
+    # The model interprets the candidate's words; Python only checks the type.
     e: dict = {}
-    dispatch("record_field", e, {"field": "has_driver_license", "value": "no tengo", "confidence": 0.9})
-    assert e["has_driver_license"] is False
-    dispatch("record_field", e, {"field": "has_driver_license", "value": "claro que sí", "confidence": 0.9})
+    dispatch("record_field", e, {"field": "has_driver_license", "value": "yes", "confidence": 0.9})
     assert e["has_driver_license"] is True
+    dispatch("record_field", e, {"field": "has_driver_license", "value": " No ", "confidence": 0.9})
+    assert e["has_driver_license"] is False
 
 
-def test_license_matches_whole_words_not_substrings():
-    # "no" inside "noviembre", "bueno" or a year must not read as a negative.
-    for yes in ["Sí, desde noviembre", "sí, bueno", "sí, desde 2020", "I have one", "yes"]:
+def test_license_raw_text_is_rejected_not_guessed():
+    # Free text (even "Sí, desde noviembre") is never parsed: the model must send yes/no.
+    for raw in ["Sí, desde noviembre", "no tengo", "true"]:
         e: dict = {}
-        dispatch("record_field", e, {"field": "has_driver_license", "value": yes, "confidence": 0.9})
-        assert e["has_driver_license"] is True, yes
-    for no in ["no", "No tengo", "nunca lo he tenido", "I don't have one"]:
-        e = {}
-        dispatch("record_field", e, {"field": "has_driver_license", "value": no, "confidence": 0.9})
-        assert e["has_driver_license"] is False, no
-
-
-def test_license_contradiction_asks_again():
-    # Design §05: "sí y no" is clarified, never resolved by picking one side.
-    r = dispatch("record_field", {}, {"field": "has_driver_license", "value": "no, bueno sí", "confidence": 0.5})
-    assert r["ok"] is False
+        r = dispatch("record_field", e, {"field": "has_driver_license", "value": raw, "confidence": 0.9})
+        assert r["ok"] is False and "has_driver_license" not in e, raw
 
 
 def test_start_date_future_only():
