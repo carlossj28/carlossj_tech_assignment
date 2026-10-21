@@ -1,0 +1,154 @@
+.page {
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 48px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+  min-height: 100dvh;
+}
+
+.header {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.title {
+  margin: 0;
+  font-family: var(--font-display), sans-serif;
+  font-weight: 400;
+  font-size: clamp(56px, 12vw, 96px);
+  line-height: 0.94;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.lead {
+  margin: 0;
+  font-size: 18px;
+  line-height: 1.55;
+}
+
+.tag {
+  background: var(--sulfur);
+  border-radius: var(--radius-pill);
+  padding: 4px 10px;
+  font-size: 14px;
+}
+
+.card {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  background: var(--limestone);
+  border-radius: var(--radius-card);
+  padding: 24px;
+  min-height: 480px;
+}
+
+.messages {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  overflow-y: auto;
+  max-height: 60dvh;
+}
+
+.bubble {
+  margin: 0;
+  max-width: 80%;
+  padding: 12px 18px;
+  border-radius: var(--radius-bubble);
+  font-size: 16px;
+  line-height: 1.55;
+  white-space: pre-wrap;
+}
+
+.rita {
+  align-self: flex-start;
+  background: var(--pumice);
+}
+
+.candidate {
+  align-self: flex-end;
+  background: var(--ember);
+}
+
+.typing {
+  margin: 0;
+  font-size: 14px;
+  opacity: 0.6;
+}
+
+.error {
+  margin: 0;
+  font-size: 14px;
+  color: var(--ember);
+}
+
+.error button {
+  font: inherit;
+  color: inherit;
+  background: none;
+  border: none;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.composer {
+  display: flex;
+  gap: 8px;
+}
+
+.input {
+  flex: 1;
+  min-width: 0;
+  font: inherit;
+  font-size: 16px;
+  color: var(--obsidian);
+  background: var(--chalk);
+  border: 1.5px solid var(--obsidian);
+  border-radius: 100px;
+  padding: 14px 24px;
+  outline: none;
+}
+
+.input:focus {
+  border-color: var(--ember);
+}
+
+.send {
+  font: inherit;
+  font-size: 16px;
+  color: var(--obsidian);
+  background: var(--ember);
+  border: none;
+  border-radius: var(--radius-pill);
+  padding: 12px 24px;
+  cursor: pointer;
+}
+
+.send:disabled,
+.input:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.done {
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  font-size: 16px;
+}
+
+@media (min-width: 640px) {
+  .card {
+    padding: 40px;
+  }
+}
