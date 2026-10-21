@@ -48,9 +48,9 @@ def fake(monkeypatch):
 
 @pytest.fixture(scope="module")
 def api():
-    import db
     from fastapi.testclient import TestClient
 
+    import db
     from main import app
     db.init_db()
     return TestClient(app)
