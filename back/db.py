@@ -159,7 +159,8 @@ def get_conversation(cid: str) -> dict[str, Any] | None:
 # ── Recruiter panel ───────────────────────────────────────────────────────────
 
 # "inactive" is derived, never stored (ADR-018): open and quiet for idle minutes.
-_LISTING = """id, candidate_name, source, screening_status, knockout_reason, completed,
+_LISTING = """id, candidate_name, extracted_fields->>'city' AS city, source, screening_status,
+    knockout_reason, completed,
     NOT completed AND last_activity_at < now() - make_interval(mins => %(idle)s) AS inactive,
     created_at, last_activity_at"""
 
