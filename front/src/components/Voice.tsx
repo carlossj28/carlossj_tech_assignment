@@ -9,7 +9,7 @@ import MessageList, { type Message } from "./MessageList";
 import Orb from "./Orb";
 import styles from "./chat.module.css";
 
-type State = "idle" | "connecting" | "live" | "ended";
+type State = "idle" | "connecting" | "live" | "ended" | "done"; // done: Rita closed the interview
 type Turn = { role: "user" | "assistant"; text: string };
 
 // Voice call with Rita: audio goes browser ↔ OpenAI (WebRTC); we relay to the back only
@@ -22,6 +22,10 @@ export default function Voice() {
   const cid = useRef("");
   const pending = useRef<Turn[]>([]); // Rita's sentences before the candidate speaks (not stored alone)
   const queue = useRef(Promise.resolve()); // back calls one at a time: no 409 between tool and transcript
+  // Hang-up after end_interview (ADR-029): "closing" once it succeeded, "bye" once the goodbye
+  // that follows it is generated; the call ends when that audio stops playing.
+  const ending = useRef<"no" | "closing" | "bye">("no");
+  const fallback = useRef<ReturnType<typeof setTimeout>>(undefined);
 
   const relay = (job: () => Promise<unknown>) => (queue.current = queue.current.then(job).then(() => undefined, () => undefined));
 
@@ -39,6 +43,7 @@ export default function Voice() {
     setError(null);
     setMessages([]);
     setState("connecting");
+    ending.current = "no";
     try {
       const mic = await navigator.mediaDevices.getUserMedia({ audio: true });
       const { conversation_id, client_secret } = await api.voiceSession();
@@ -63,9 +68,18 @@ export default function Voice() {
           sentence({ role: "user", text: ev.transcript.trim() });
         else if (ev.type === "response.output_audio_transcript.done" && ev.transcript?.trim())
           sentence({ role: "assistant", text: ev.transcript.trim() });
+        else if (ev.type === "response.done" && ending.current === "closing"
+                 && !ev.response?.output?.some((item: { type: string }) => item.type === "function_call"))
+          ending.current = "bye";
+        else if (ev.type === "output_audio_buffer.stopped" && ending.current === "bye")
+          finish();
         else if (ev.type === "response.function_call_arguments.done")
           relay(async () => {
             const out = await api.voiceTool(cid.current, ev.name, JSON.parse(ev.arguments || "{}"));
+            if (ev.name === "end_interview" && out.ok) {
+              ending.current = "closing";
+              fallback.current = setTimeout(finish, 15000); // in case the audio-stopped event never comes
+            }
             send({ type: "conversation.item.create", item: { type: "function_call_output", call_id: ev.call_id, output: JSON.stringify(out) } });
             send({ type: "response.create" }); // let Rita react to the result
           });
@@ -90,10 +104,17 @@ export default function Voice() {
   // UI only: stops the mic and the link to OpenAI. What was stored stays; an unfinished
   // interview shows as inactive in the panel after 5 minutes.
   function hangUp() {
+    clearTimeout(fallback.current);
     pc.current?.getSenders().forEach((s) => s.track?.stop());
     pc.current?.close();
     pc.current = null;
     setState((s) => (s === "live" ? "ended" : s));
+  }
+
+  // Rita closed the interview: the call ends for good, no "call again" (ADR-029).
+  function finish() {
+    hangUp();
+    setState("done");
   }
 
   useEffect(() => hangUp, []); // leaving the page ends the call
@@ -123,16 +144,20 @@ export default function Voice() {
               <span>Asistente de selección</span>
             </span>
             <span className={`${styles.presence} eyebrow ${live ? styles.busy : ""}`}>
-              {{ idle: "Lista", connecting: "Conectando…", live: "En llamada", ended: "Llamada terminada" }[state]}
+              {{ idle: "Lista", connecting: "Conectando…", live: "En llamada", ended: "Llamada terminada", done: "Entrevista terminada" }[state]}
             </span>
           </div>
 
           <MessageList messages={messages} />
           {error && <p className={styles.error} role="alert">{error}</p>}
-          <button className={styles.send} style={{ alignSelf: "center", margin: "12px 0 0" }}
-                  onClick={live ? hangUp : call} disabled={state === "connecting"}>
-            {live ? "Colgar" : state === "ended" ? "Llamar de nuevo" : "Llamar"}
-          </button>
+          {state === "done" ? (
+            <p className={styles.disclaimer}>Entrevista terminada. ¡Gracias! El equipo de selección revisará tu candidatura.</p>
+          ) : (
+            <button className={styles.send} style={{ alignSelf: "center", margin: "12px 0 0" }}
+                    onClick={live ? hangUp : call} disabled={state === "connecting"}>
+              {live ? "Colgar" : state === "ended" ? "Llamar de nuevo" : "Llamar"}
+            </button>
+          )}
           <p className={styles.disclaimer}>Rita es una IA · La llamada se transcribe para el equipo de selección.</p>
         </section>
       </div>

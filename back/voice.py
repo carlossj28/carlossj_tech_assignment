@@ -23,7 +23,13 @@ from tools import OPENAI_TOOL_SCHEMAS, dispatch, screening_status
 router = APIRouter(prefix="/api/voice")
 
 _VOICE_RULES = ("\n# Voz\nEstás en una llamada: frases habladas y cortas, sin emojis, listas ni formato. "
-                "Empieza saludando y preguntando el nombre.")
+                "Empieza saludando y preguntando el nombre.\n"
+                # The browser hangs up after the goodbye that follows end_interview, so
+                # corrections must come before it (ADR-029).
+                "Antes de llamar a end_interview (también tras un knockout), pregunta siempre "
+                "«¿Puedo ayudarte en algo más?». Si pide un cambio, guárdalo y vuelve a preguntarlo. "
+                "Llama a end_interview solo cuando diga que no; después despídete en una frase: "
+                "la llamada se cuelga sola.")
 
 # Realtime takes the same tools, flattened: {"type", "name", ...} instead of {"type", "function": {...}}.
 _TOOLS = [{"type": "function", **t["function"]} for t in OPENAI_TOOL_SCHEMAS]

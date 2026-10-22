@@ -26,6 +26,7 @@ def test_session_mints_key_with_same_brain_and_stores_nothing(monkeypatch):
     assert {t["name"] for t in sent["tools"]} == {"save_answer", "end_interview"}
     assert all("function" not in t and t["type"] == "function" for t in sent["tools"])  # Realtime shape
     assert "Eres Rita" in sent["instructions"] and "llamada" in sent["instructions"]
+    assert "¿Puedo ayudarte en algo más?" in sent["instructions"]  # asked before hanging up (ADR-029)
     assert sent["audio"]["input"]["transcription"]["model"] == "gpt-transcribe"
 
 
