@@ -23,7 +23,6 @@ export const FIELDS: [key: string, label: string][] = [
   ["preferred_schedule", "Horario"],
   ["prior_experience", "Experiencia"],
   ["start_date", "Fecha de inicio"],
-  ["contact_email", "Email"],
 ];
 
 export function formatField(key: string, value: unknown): string {
