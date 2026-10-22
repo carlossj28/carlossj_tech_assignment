@@ -1,0 +1,128 @@
+/* Voice call card: Rita's orb on stage, subtitles under it, the call button at the bottom.
+   Layered on chat.module.css (.card, .send, .done…). */
+.card {
+  padding-top: 8px;
+}
+
+/* Stage, subtitles and button sit together in the middle; the disclaimer stays at the bottom. */
+.stage {
+  flex: none;
+  margin-top: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+/* The orb shrinks with the screen height, so the button never leaves the screen. */
+.orb {
+  width: clamp(150px, 36dvh, 340px);
+  transition: width 0.5s var(--ease-out);
+}
+
+.foot {
+  margin-top: auto;
+}
+
+/* With the full transcript open the orb steps back to a small header. */
+.compact {
+  margin-top: 0;
+  flex-direction: row;
+  gap: 4px;
+  padding: 4px 0;
+}
+
+.compact .orb {
+  width: 72px;
+}
+
+.status {
+  margin: -8px 0 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--ash);
+}
+
+.compact .status {
+  margin: 0;
+}
+
+.status::before {
+  content: "";
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--slate);
+}
+
+.on::before {
+  background: var(--mint);
+  box-shadow: 0 0 10px var(--mint);
+}
+
+/* Last line from Rita, and the candidate's last answer under it. */
+.subtitles {
+  flex: none;
+  min-height: 92px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 14px 20px 6px;
+  text-align: center;
+}
+
+.said {
+  margin: 0;
+  max-width: 36ch;
+  font-size: 18px;
+  line-height: 1.45;
+  color: var(--white);
+  animation: rise 0.4s var(--ease-out) both;
+}
+
+.you {
+  margin: 0;
+  max-width: 44ch;
+  font-size: 13.5px;
+  color: var(--slate);
+}
+
+.call {
+  align-self: center;
+  margin-top: 10px;
+  padding: 12px 26px 12px 22px;
+}
+
+/* Live call: the button turns into a red hang-up. */
+.hangUp:not(:disabled) {
+  color: var(--white);
+  background: var(--rose);
+  border-color: var(--rose);
+  box-shadow: 0 8px 28px -10px var(--rose);
+}
+
+.toggle {
+  align-self: center;
+  margin-top: 8px;
+  font: inherit;
+  font-size: 13px;
+  color: var(--ash);
+  background: none;
+  border: none;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+.toggle:hover {
+  color: var(--white);
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
