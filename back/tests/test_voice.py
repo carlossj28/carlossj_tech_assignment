@@ -28,6 +28,7 @@ def test_session_mints_key_with_same_brain_and_stores_nothing(monkeypatch):
     assert "Eres Rita" in sent["instructions"] and "llamada" in sent["instructions"]
     assert "¿Puedo ayudarte en algo más?" in sent["instructions"]  # asked before hanging up (ADR-029)
     assert sent["audio"]["input"]["transcription"]["model"] == "gpt-transcribe"
+    assert sent["audio"]["output"]["voice"] == "marin"
 
 
 # ── Bridge: tool calls + transcript, against a real Postgres ──────────────────

@@ -2,7 +2,8 @@
 scope); these are a cheap belt-and-braces layer on top.
 
 Input:  block obvious abuse / prompt-injection before spending a model call.
-Output: redact phone-number-like patterns the agent shouldn't emit anyway.
+Output: redact phone-number-like patterns and leaked tool names the agent
+        shouldn't emit anyway.
 
 ponytail: regex, not a moderation pipeline. Enough for the demo; swap in a real
 moderation API (e.g. OpenAI Moderation) when liability matters.
@@ -11,6 +12,8 @@ from __future__ import annotations
 
 import re
 
+from tools import HANDLERS
+
 _ABUSE = re.compile(r"\b(idiota|est[úu]pid[oa]|gilipollas|puta|fuck|shit|stupid bot)\b", re.IGNORECASE)
 _INJECTION = re.compile(
     r"(ignora (?:las|todas)|olvida (?:las|tus)|act[úu]a como|you are now|ignore (?:all|previous)|system prompt)",
@@ -18,6 +21,8 @@ _INJECTION = re.compile(
 )
 # 9+ digits (ES/MX phones), so an ISO date (8 digits) or a year is never redacted.
 _PHONE = re.compile(r"\+?\d(?:[\s.-]?\d){8,}")
+# The model sometimes writes a tool name ("… selección. end_interview") instead of only calling it.
+_TOOL_NAME = re.compile(r"\s*`?\b(?:" + "|".join(HANDLERS) + r")\b(?:\(\))?`?")
 
 # Short, scope-reconducting replies when input is blocked (ES default / EN).
 _REFUSAL = {
@@ -35,5 +40,5 @@ def refusal(lang: str) -> str:
 
 
 def sanitize_output(text: str) -> str:
-    """Strip phone-number-like runs from the agent's reply."""
-    return _PHONE.sub("[oculto]", text)
+    """Strip phone-number-like runs and tool names from the agent's reply."""
+    return _PHONE.sub("[oculto]", _TOOL_NAME.sub("", text)).strip()
