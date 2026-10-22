@@ -33,11 +33,12 @@ class NudgeBody(BaseModel):
 
 
 @contextmanager
-def _turn(cid: UUID, *, create: bool = False) -> Iterator[tuple]:
-    """The open transaction + the locked conversation row, with the contract's errors."""
+def _turn(cid: UUID, *, create: str | None = None) -> Iterator[tuple]:
+    """The open transaction + the locked conversation row, with the contract's errors.
+    `create`: the source ("chat"/"voice") if the first contribution may create the row."""
     with db.pool().connection() as conn:
         if create:
-            db.ensure_conversation(conn, cid, GREETING)
+            db.ensure_conversation(conn, cid, GREETING if create == "chat" else None, create)
         try:
             conv = db.lock_conversation(conn, cid)
         except db.Busy:
@@ -58,7 +59,7 @@ def start() -> dict:
 
 @router.post("/message")
 def message(body: MessageBody) -> dict:
-    with _turn(body.conversation_id, create=True) as (conn, conv):
+    with _turn(body.conversation_id, create="chat") as (conn, conv):
         history = [*db.get_history(conn, conv["id"]), {"role": "user", "content": body.message}]
         result = run_turn(history, conv["extracted_fields"])
         db.save_turn(conn, conv["id"], body.message, result)

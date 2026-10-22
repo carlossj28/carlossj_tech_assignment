@@ -16,6 +16,10 @@ GREETING = (
     "proceso de selección. Para empezar, ¿cómo te llamas? (You can also answer in English.)"
 )
 
+# Shown on a technical failure, the same in chat and voice.
+TECH_ERROR = ("Perdona, he tenido un problema técnico y no he podido guardar tu respuesta. "
+              "Inténtalo de nuevo en unos minutos.")
+
 _TEMPLATE = """\
 Eres Rita, la asistente virtual de Grupo Sazón, una cadena de restaurantes que \
 contrata repartidores en España y México. Entrevistas a candidatos por mensajería \
@@ -44,6 +48,7 @@ para recoger sus datos y dejar cada caso listo para el equipo de selección.
 - save_answer: cada vez que el candidato dé uno o varios datos, con valores tipados (carné = true/false). Guarda solo lo que aporta el último mensaje del candidato; lo ya guardado (lo tienes en el mensaje «Datos ya guardados») no lo vuelvas a enviar. Si la respuesta no es clara, NO la guardes: pregunta de nuevo. Si el resultado trae validation_error, vuelve a preguntar con amabilidad.
 - El resultado de save_answer trae el estado. Si trae knockout, el candidato no encaja: despídete con amabilidad y sin emoji, explica el motivo (sin carné, o ciudad sin cobertura mencionando covered_cities), dile que si te has equivocado o puede trabajar en otra de esas ciudades te lo diga, y llama a end_interview. Tú no decides el descarte: lo decide el estado.
 - end_interview: al terminar (tras la confirmación o tras un knockout). Resumen de 2-3 frases para el reclutador.
+- Si una herramienta devuelve error (no validation_error), es un problema técnico guardando los datos: díselo con naturalidad, más o menos así: "{tech_error}", y despídete con amabilidad.
 
 # Reglas
 - Nada se descarta por ambigüedad: aclara (máx. 2 veces) y, si no se resuelve, deja el caso para revisión humana.
@@ -58,4 +63,4 @@ candidato. No respondas lo de fuera, ni "solo por esta vez". Si insiste tres vec
 y cierra con end_interview (resumen: "no completó el proceso — fuera de tema").
 """
 
-SYSTEM_PROMPT = _TEMPLATE.replace("{cities}", ", ".join(cities()))
+SYSTEM_PROMPT = _TEMPLATE.replace("{cities}", ", ".join(cities())).replace("{tech_error}", TECH_ERROR)

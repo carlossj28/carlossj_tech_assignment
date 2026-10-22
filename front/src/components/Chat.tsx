@@ -53,7 +53,7 @@ export default function Chat() {
       return true;
     } catch {
       setMessages((m) => m.slice(0, -1)); // drop the unsent bubble; Composer keeps the text
-      setError("No hemos podido enviar tu mensaje. Inténtalo de nuevo.");
+      setError("Perdona, he tenido un problema técnico y no he podido guardar tu respuesta. Inténtalo de nuevo en unos minutos.");
       return false;
     } finally {
       setTyping(false);
@@ -146,7 +146,9 @@ export default function Chat() {
           )}
           {/* Stays enabled after completion: a new message reopens the conversation (ADR-028). */}
           <Composer disabled={!conversationId || typing} onSend={send} />
-          <p className={styles.disclaimer}>Rita es una IA · Responde con tus palabras, sin prisa.</p>
+          <p className={styles.disclaimer}>
+            Rita es una IA · Responde con tus palabras, sin prisa. · <Link href="/voz">Prefiero hablar</Link>
+          </p>
         </section>
       </div>
     </main>

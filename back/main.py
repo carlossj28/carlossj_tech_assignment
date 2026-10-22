@@ -14,6 +14,7 @@ from pydantic import BaseModel
 import auth
 from chat import router as chat_router
 from recruiter import router as recruiter_router
+from voice import router as voice_router
 
 
 @asynccontextmanager
@@ -27,6 +28,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(title="Sazon Screening API", lifespan=lifespan)
 app.include_router(chat_router)
 app.include_router(recruiter_router)
+app.include_router(voice_router)
 
 
 @app.get("/health")

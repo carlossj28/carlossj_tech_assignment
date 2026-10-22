@@ -61,13 +61,13 @@ def start_conversation(source: str, greeting: str) -> str:
     return str(cid)
 
 
-def ensure_conversation(conn: Connection, cid: UUID, greeting: str) -> None:
-    """Create the conversation on the candidate's first message, so visitors who
-    never write leave no row. Inside the turn's transaction: a failed turn leaves nothing."""
+def ensure_conversation(conn: Connection, cid: UUID, greeting: str | None, source: str = "chat") -> None:
+    """Create the conversation on the candidate's first contribution, so visitors who
+    never write or speak leave no row. Inside the turn's transaction: a failed turn leaves nothing."""
     created = conn.execute(
-        "INSERT INTO conversations (id, source) VALUES (%s, 'chat') ON CONFLICT (id) DO NOTHING", (cid,)
+        "INSERT INTO conversations (id, source) VALUES (%s, %s) ON CONFLICT (id) DO NOTHING", (cid, source)
     ).rowcount
-    if created:
+    if created and greeting:
         conn.execute(
             "INSERT INTO turns (conversation_id, role, content) VALUES (%s, 'assistant', %s)",
             (cid, greeting),
@@ -121,6 +121,32 @@ def save_nudge(conn: Connection, cid: UUID, reply: str) -> None:
         "INSERT INTO turns (conversation_id, role, content) VALUES (%s, 'assistant', %s)", (cid, reply)
     )
     conn.execute("UPDATE conversations SET nudge_count = nudge_count + 1 WHERE id = %s", (cid,))
+
+
+# ── Voice: the browser relays each tool call and each finished sentence ─────────
+
+def save_voice_data(conn: Connection, cid: UUID, extracted: dict, status: str,
+                    knockout: str | None, *, completed: bool, summary: str | None) -> None:
+    """Data + status after a voice tool call. Once Rita closes the call it stays
+    closed (unlike chat, a call has no "new message" that reopens it)."""
+    conn.execute(
+        """UPDATE conversations
+              SET extracted_fields = %s, candidate_name = %s, screening_status = %s,
+                  knockout_reason = %s, completed = %s, summary = COALESCE(%s, summary),
+                  last_activity_at = now()
+            WHERE id = %s""",
+        (json.dumps(extracted), extracted.get("full_name"), status, knockout, completed, summary, cid),
+    )
+
+
+def save_voice_turns(conn: Connection, cid: UUID, turns: list[tuple[str, str]]) -> None:
+    """Transcribed sentences, in order. A candidate sentence is activity; Rita's isn't."""
+    for role, text in turns:
+        conn.execute(
+            "INSERT INTO turns (conversation_id, role, content) VALUES (%s, %s, %s)", (cid, role, text)
+        )
+    if any(role == "user" for role, _ in turns):
+        conn.execute("UPDATE conversations SET last_activity_at = now() WHERE id = %s", (cid,))
 
 
 def get_conversation(cid: str) -> dict[str, Any] | None:

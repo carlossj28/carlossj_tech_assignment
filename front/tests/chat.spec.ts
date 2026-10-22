@@ -42,14 +42,14 @@ test("a failed send shows an error and keeps the text to retry", async ({ page }
   await mockBack(page, { message: () => (fail ? undefined : { reply: "Gracias", completed: false, status: "pending" }) });
   await page.goto("/");
   await send(page, "Ana");
-  await expect(page.getByText("No hemos podido enviar")).toBeVisible();
+  await expect(page.getByText("problema técnico")).toBeVisible();
   await expect(page.locator('[data-role="candidate"]')).toHaveCount(0);
   await expect(page.getByLabel("Tu respuesta")).toHaveValue("Ana");
 
   fail = false;
   await page.getByRole("button", { name: "Enviar" }).click();
   await expect(page.locator('[data-role="rita"]').last()).toHaveText("Gracias");
-  await expect(page.getByText("No hemos podido enviar")).toHaveCount(0);
+  await expect(page.getByText("problema técnico")).toHaveCount(0);
 });
 
 test("a failed start can be retried", async ({ page }) => {
