@@ -19,6 +19,7 @@ Copia `.env.example` a `.env` y rellena las claves.
 # Back  (http://localhost:8000, /health, /docs)
 cd back && uv sync && uv run uvicorn main:app --reload
 cd back && uv run pytest        # tests
+cd back && OPENAI_API_KEY=... uv run python -m evals   # evals del agente real (back/evals/README.md)
 
 # Front  (http://localhost:3000)
 cd front && npm install && npm run dev
