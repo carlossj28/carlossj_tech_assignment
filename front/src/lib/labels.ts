@@ -42,3 +42,23 @@ export function formatField(key: string, value: unknown): string {
 export function formatDate(iso: string, withTime = true): string {
   return new Date(iso).toLocaleString("es-ES", withTime ? { dateStyle: "medium", timeStyle: "short" } : { dateStyle: "medium" });
 }
+
+const RELATIVE = new Intl.RelativeTimeFormat("es-ES", { numeric: "auto" });
+
+// "hace 5 minutos", "ayer"…: quick to scan in the list; formatDate keeps the exact time.
+export function formatRelative(iso: string): string {
+  const minutes = Math.round((new Date(iso).getTime() - Date.now()) / 60_000);
+  if (minutes > -1) return "ahora mismo";
+  if (minutes > -60) return RELATIVE.format(minutes, "minute");
+  const hours = Math.round(minutes / 60);
+  if (hours > -24) return RELATIVE.format(hours, "hour");
+  return RELATIVE.format(Math.round(hours / 24), "day");
+}
+
+// Time between two instants, rounded to minutes: "5 min", "1 h 20 min".
+export function formatDuration(fromIso: string, toIso: string): string {
+  const minutes = Math.max(1, Math.round((new Date(toIso).getTime() - new Date(fromIso).getTime()) / 60_000));
+  if (minutes < 60) return `${minutes} min`;
+  const rest = minutes % 60;
+  return rest ? `${Math.floor(minutes / 60)} h ${rest} min` : `${minutes / 60} h`;
+}

@@ -1,0 +1,307 @@
+/* Split screen: aurora art panel (a short banner on mobile, so the form is in the first screen;
+   the left half on desktop) and the form. */
+.split {
+  position: relative;
+  isolation: isolate;
+  min-height: 100dvh;
+  display: grid;
+  grid-template-rows: auto 1fr;
+  gap: 8px;
+  padding: 12px;
+}
+
+.art {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 52px;
+  padding: 18px 20px 22px;
+  border-radius: var(--radius-card);
+  border: 1px solid var(--hairline);
+  background: var(--canvas);
+}
+
+/* Above the panel's aurora. */
+.pitch {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.headline {
+  margin: 0;
+  font-size: clamp(34px, 9.4vw, 88px);
+  font-weight: 600;
+  line-height: 0.95;
+  letter-spacing: -0.05em;
+  color: var(--white);
+}
+
+.headline span {
+  color: color-mix(in srgb, var(--white) 50%, transparent);
+}
+
+.sub {
+  display: none;
+  margin: 0;
+  max-width: 34ch;
+  font-size: 16px;
+  line-height: 1.55;
+  color: var(--ash);
+}
+
+/* Floating glass cards telling the product's story: Rita asks, sums up, and the recruiter sees the verdict.
+   From 960px they share the sky between the brand and the rim evenly, whatever the screen's height. */
+.glimpses {
+  display: none;
+}
+
+.glimpse {
+  display: flex;
+  align-self: flex-start;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 18px 12px 12px;
+  border-radius: 20px;
+  background: var(--glass-raised);
+  border: 1px solid var(--hairline-strong);
+  box-shadow: var(--glass-shadow);
+  font-size: 14px;
+  white-space: nowrap;
+  color: var(--bone);
+  animation: float 8s ease-in-out infinite;
+  will-change: transform;
+}
+
+.glimpse strong {
+  display: block;
+  margin-bottom: 2px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--white);
+}
+
+.ask {
+  margin-left: 7%;
+}
+
+.brief {
+  margin-left: 19%;
+  width: min(360px, 68%);
+  flex-direction: column;
+  align-items: stretch;
+  gap: 10px;
+  padding: 14px 18px 16px;
+  white-space: normal;
+  animation-delay: -2.7s;
+}
+
+.briefHead {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.briefHead strong {
+  margin: 0;
+}
+
+.briefHead small {
+  margin-left: auto;
+  font-variant-numeric: tabular-nums;
+  color: var(--ash);
+}
+
+.brief p {
+  margin: 0;
+  padding-left: 12px;
+  border-left: 2px solid transparent;
+  border-image: linear-gradient(180deg, var(--violet), var(--coral), var(--amber)) 1;
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: var(--bone);
+}
+
+.verdict {
+  align-self: flex-end;
+  margin-right: 6%;
+  animation-delay: -5.4s;
+}
+
+.side {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+  padding: 22px 6px 8px;
+}
+
+.form {
+  width: 100%;
+  max-width: 420px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.head {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 4px;
+}
+
+.title {
+  margin: 0;
+  font-size: 40px;
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: -0.045em;
+  color: var(--white);
+}
+
+.icon {
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.secure {
+  margin: 2px 0 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-size: 12.5px;
+  color: var(--slate);
+}
+
+.foot {
+  margin: 0;
+  text-align: center;
+  font-size: 14px;
+  color: var(--slate);
+}
+
+.foot a {
+  color: var(--bone);
+  text-decoration: underline;
+  text-decoration-color: var(--hairline-strong);
+  text-underline-offset: 4px;
+}
+
+.foot a:hover {
+  text-decoration-color: var(--coral);
+}
+
+/* Small phones: drop the form's intro line so the whole form, and the link under it, fit one screen. */
+@media (max-width: 959px) and (max-height: 700px) {
+  .head p {
+    display: none;
+  }
+}
+
+/* Tablets: a taller banner, the form right under it. */
+@media (min-width: 640px) and (max-width: 959px) {
+  .art {
+    min-height: 40dvh;
+    padding: 28px 32px 32px;
+  }
+
+  .side {
+    padding-top: 40px;
+  }
+}
+
+@keyframes float {
+  50% {
+    transform: translateY(-8px);
+  }
+}
+
+@media (min-width: 960px) {
+  .split {
+    height: 100dvh;
+    min-height: 640px;
+    grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+    grid-template-rows: none;
+    gap: 16px;
+    padding: 16px;
+  }
+
+  .art {
+    padding: 36px 40px 44px;
+  }
+
+  .headline {
+    font-size: clamp(56px, 6.2vw, 88px);
+  }
+
+  .sub {
+    display: block;
+  }
+
+  /* From under the brand row down to the rim, which sits at the panel's --horizon (aurora.module.css). */
+  .glimpses {
+    position: absolute;
+    inset: 0 0 auto;
+    height: min(54%, 100% - 350px);
+    padding-top: 64px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-evenly;
+    pointer-events: none;
+  }
+
+  .side {
+    justify-content: center;
+    gap: 24px;
+    padding: 24px;
+  }
+
+  .form {
+    gap: 18px;
+    padding: 36px;
+    border-radius: var(--radius-card);
+    background: var(--glass);
+    border: 1px solid var(--hairline);
+    box-shadow: var(--glass-shadow);
+  }
+
+  .title {
+    font-size: 44px;
+  }
+}
+
+/* Short laptop screens: a smaller headline, so it stays clear of the rim. */
+@media (min-width: 960px) and (max-height: 820px) {
+  .headline {
+    font-size: clamp(52px, min(6.2vw, 10.5vh), 88px);
+  }
+}
+
+/* Shorter still, the sky holds fewer cards: two from 780px down (the summary takes the question's place),
+   the summary alone from 700px. */
+@media (min-width: 960px) and (max-height: 780px) {
+  .ask {
+    display: none;
+  }
+
+  .brief {
+    margin-left: 7%;
+  }
+}
+
+@media (min-width: 960px) and (max-height: 700px) {
+  .verdict {
+    display: none;
+  }
+}
