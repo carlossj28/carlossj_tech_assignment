@@ -24,6 +24,11 @@ router = APIRouter(prefix="/api/voice")
 
 _VOICE_RULES = ("\n# Voz\nEstás en una llamada: frases habladas y cortas, sin emojis, listas ni formato. "
                 "Empieza saludando y preguntando el nombre.\n"
+                # Saving a field is a round trip through the browser; a short line
+                # in the same response fills that silence.
+                "A veces, antes de guardar un dato, di una frase muy corta como «vale, lo apunto» "
+                "o «perfecto, un segundo» y luego guárdalo. No lo hagas en cada turno, varía la "
+                "frase y nunca repitas la misma dos veces seguidas.\n"
                 # The browser hangs up after the goodbye that follows end_interview, so
                 # corrections must come before it (ADR-029).
                 "Antes de llamar a end_interview (también tras un knockout), pregunta siempre "
