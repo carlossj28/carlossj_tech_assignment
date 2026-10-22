@@ -75,7 +75,10 @@ def session() -> dict:
 @router.post("/tool")
 def tool(body: ToolBody) -> dict:
     """Run one tool call for the model. The reply goes back to the model as is:
-    validation problems as validation_error, so it re-asks (same as chat)."""
+    validation problems as validation_error, so it re-asks (same as chat).
+    A FAQ lookup touches no candidate data, so it skips the row lock."""
+    if body.name == "search_faq":
+        return dispatch(body.name, {}, body.args)
     with _turn(body.conversation_id, create="voice") as (conn, conv):
         extracted = conv["extracted_fields"]
         out = dispatch(body.name, extracted, body.args)

@@ -23,7 +23,7 @@ def test_session_mints_key_with_same_brain_and_stores_nothing(monkeypatch):
     body = TestClient(main.app).post("/api/voice/session").json()
 
     assert body["client_secret"] == "ek_test" and len(body["conversation_id"]) == 36
-    assert {t["name"] for t in sent["tools"]} == {"save_answer", "end_interview"}
+    assert {t["name"] for t in sent["tools"]} == {"save_answer", "end_interview", "search_faq"}
     assert all("function" not in t and t["type"] == "function" for t in sent["tools"])  # Realtime shape
     assert "Eres Rita" in sent["instructions"] and "llamada" in sent["instructions"]
     assert "¿Puedo ayudarte en algo más?" in sent["instructions"]  # asked before hanging up (ADR-029)
