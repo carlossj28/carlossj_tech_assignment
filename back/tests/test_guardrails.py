@@ -20,6 +20,12 @@ def test_phone_redaction_keeps_dates_and_years():
     assert guardrails.sanitize_output(text) == text
 
 
+def test_tool_names_never_reach_the_candidate():
+    text = "¡Perfecto, gracias! He dejado tu caso listo para el equipo de selección. end_interview"
+    assert guardrails.sanitize_output(text) == "¡Perfecto, gracias! He dejado tu caso listo para el equipo de selección."
+    assert guardrails.sanitize_output("Guardado `save_answer()` ¿Tu ciudad?") == "Guardado ¿Tu ciudad?"
+
+
 def test_language_detection():
     assert language.detect("hola, tengo carné") == "es"
     assert language.detect("hi, i have a driver license") == "en"
