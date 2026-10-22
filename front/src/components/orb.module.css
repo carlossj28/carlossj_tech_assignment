@@ -1,0 +1,81 @@
+.orb {
+  position: relative;
+  flex: none;
+  width: var(--size);
+  height: var(--size);
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 32% 26%, color-mix(in srgb, var(--white) 95%, transparent), transparent 24%),
+    radial-gradient(circle at 74% 72%, var(--cobalt), transparent 58%),
+    radial-gradient(circle at 22% 78%, var(--coral), transparent 52%),
+    radial-gradient(circle at 50% 50%, var(--violet), var(--violet-deep) 78%);
+  box-shadow:
+    0 0 calc(var(--size) * 0.6) var(--glow-violet),
+    inset 0 0 calc(var(--size) * 0.18) color-mix(in srgb, var(--white) 30%, transparent);
+}
+
+/* A swirl of light inside the sphere; it turns only while Rita writes (.active). */
+.orb::before {
+  content: "";
+  position: absolute;
+  inset: 8%;
+  border-radius: inherit;
+  background: conic-gradient(
+    from 0deg,
+    transparent,
+    color-mix(in srgb, var(--amber) 70%, transparent),
+    transparent 38%,
+    color-mix(in srgb, var(--cobalt) 60%, transparent),
+    transparent 72%
+  );
+  mix-blend-mode: screen;
+  filter: blur(calc(var(--size) * 0.08));
+}
+
+/* Warm halo just outside the sphere: hidden at rest, it flares while Rita writes (opacity only). */
+.orb::after {
+  content: "";
+  position: absolute;
+  inset: -45%;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, transparent 50%, color-mix(in srgb, var(--coral) 32%, transparent) 62%, transparent);
+  opacity: 0;
+}
+
+/* Breathing is scale + opacity only, so it runs on the compositor. */
+.active {
+  animation: breathe 1.6s ease-in-out infinite;
+  will-change: transform;
+}
+
+.active::before {
+  animation: spin 2.4s linear infinite;
+  will-change: transform;
+}
+
+.active::after {
+  animation: flare 1.6s ease-in-out infinite;
+}
+
+/* A still orb for dense, read-only places (the recruiter's transcript): no outer glow. */
+.still {
+  box-shadow: inset 0 0 calc(var(--size) * 0.18) color-mix(in srgb, var(--white) 30%, transparent);
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(1turn);
+  }
+}
+
+@keyframes breathe {
+  50% {
+    transform: scale(1.1);
+  }
+}
+
+@keyframes flare {
+  50% {
+    opacity: 1;
+  }
+}

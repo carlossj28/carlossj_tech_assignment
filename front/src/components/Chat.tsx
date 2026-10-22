@@ -1,9 +1,14 @@
 "use client";
 
+import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import * as api from "@/lib/api";
+import { FIELDS } from "@/lib/labels";
+import Aurora from "./Aurora";
+import Brand from "./Brand";
 import Composer from "./Composer";
 import MessageList, { type Message } from "./MessageList";
+import Orb from "./Orb";
 import styles from "./chat.module.css";
 
 const NUDGE_AFTER_MS = 60_000; // silence before asking Rita for a reminder (ADR-018)
@@ -71,29 +76,77 @@ export default function Chat() {
     return () => clearTimeout(timer);
   }, [conversationId, completed, typing, messages]);
 
+  const offline = !conversationId && !!error;
+  const writing = typing || (!conversationId && !error); // Rita also "writes" her greeting while it loads
+
   return (
     <main className={styles.page}>
-      <header className={styles.header}>
-        <span className={styles.tag}>✦ Grupo Sazón · Repartidores</span>
-        <h1 className={styles.title}>Habla con Rita</h1>
-        <p className={styles.lead}>Unas preguntas rápidas sobre tu candidatura. Tardas menos de 5 minutos.</p>
+      <Aurora />
+      <header className={styles.bar}>
+        <Brand area="Repartidores" />
+        {/* Demo shortcut into the panel; on a phone it shrinks to an icon. */}
+        <Link className={styles.staff} href="/recruiter/login" aria-label="Acceso reclutadores">
+          <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden>
+            <circle cx="8" cy="5.5" r="2.5" />
+            <path d="M3 13.5c.6-2.6 2.6-4 5-4s4.4 1.4 5 4" />
+          </svg>
+          <span className={styles.staffText}>Acceso reclutadores</span>
+        </Link>
       </header>
 
-      <section className={styles.card}>
-        <MessageList messages={messages} typing={typing} />
-        {error && (
-          <p className={styles.error} role="alert">
-            {error} {!conversationId && <button onClick={start}>Reintentar</button>}
-          </p>
-        )}
-        {completed && (
-          <p className={styles.done}>
-            <span className={styles.tag}>Entrevista completada</span> Gracias, un reclutador revisará tu candidatura.
-          </p>
-        )}
-        {/* Stays enabled after completion: a new message reopens the conversation (ADR-028). */}
-        <Composer disabled={!conversationId || typing} onSend={send} />
-      </section>
+      <div className={styles.layout}>
+        <section className={styles.hero}>
+          <span className={styles.tag}>
+            <span className={styles.spark} aria-hidden>✦</span> Entrevista con IA
+          </span>
+          <h1 className={styles.title}>
+            Habla con <span className={styles.glow}>Rita</span>
+          </h1>
+          <p className={styles.lead}>Unas preguntas rápidas sobre tu candidatura. Tardas menos de 5 minutos.</p>
+          <div className={styles.topics}>
+            <span className={styles.label}>Te preguntará por</span>
+            <p>
+              {FIELDS.map(([key, label]) => (
+                <span key={key} className={styles.topic}>{label}</span>
+              ))}
+            </p>
+          </div>
+        </section>
+
+        <section className={styles.card} aria-label="Conversación con Rita">
+          <div className={styles.agent}>
+            <Orb size={44} active={writing} />
+            <span className={styles.who}>
+              <strong>Rita</strong>
+              <span>Asistente de selección</span>
+            </span>
+            <span className={`${styles.presence} eyebrow ${offline ? styles.offline : writing ? styles.busy : ""}`}>
+              {offline ? "Sin conexión" : writing ? "Escribiendo…" : "En línea"}
+            </span>
+          </div>
+
+          <MessageList messages={messages} typing={writing} />
+          {error && (
+            <p className={styles.error} role="alert">
+              {error} {!conversationId && <button onClick={start}>Reintentar</button>}
+            </p>
+          )}
+          {completed && (
+            <p className={styles.done}>
+              <svg className={styles.check} viewBox="0 0 32 32" aria-hidden>
+                <circle cx="16" cy="16" r="15" />
+                <path d="m10 16.5 4 4 8-9" pathLength={1} />
+              </svg>
+              <span>
+                <strong>Entrevista completada</strong> Gracias, un reclutador revisará tu candidatura.
+              </span>
+            </p>
+          )}
+          {/* Stays enabled after completion: a new message reopens the conversation (ADR-028). */}
+          <Composer disabled={!conversationId || typing} onSend={send} />
+          <p className={styles.disclaimer}>Rita es una IA · Responde con tus palabras, sin prisa.</p>
+        </section>
+      </div>
     </main>
   );
 }

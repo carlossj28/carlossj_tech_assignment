@@ -1,0 +1,317 @@
+/* Conversation detail: profile header, then summary + fields (beside the transcript from 900px). */
+.profile {
+  position: relative;
+  overflow: hidden;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  grid-template-areas:
+    "avatar ring"
+    "identity identity"
+    "facts facts";
+  align-items: center;
+  gap: 20px;
+  padding: 22px;
+  background: radial-gradient(320px 220px at 100% 0%, color-mix(in srgb, var(--coral) 12%, transparent), transparent), var(--glass);
+}
+
+/* Aurora light leaking in from the top edge. */
+.profile::before {
+  content: "";
+  position: absolute;
+  inset: -1px 10% auto;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--glow-amber), var(--glow-violet), transparent);
+}
+
+.identity {
+  grid-area: identity;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 14px;
+  min-width: 0;
+}
+
+.name {
+  margin: 0;
+  font-size: clamp(36px, 8vw, 64px);
+  font-weight: 600;
+  line-height: 0.95;
+  letter-spacing: -0.05em;
+  color: var(--white);
+}
+
+/* Timeline strip under the header: label over value, split by hairlines. */
+.facts {
+  grid-area: facts;
+  display: grid;
+  border-top: 1px solid var(--hairline);
+}
+
+.facts > span {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  padding: 12px 0 0;
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+  color: var(--bone);
+}
+
+.facts small {
+  color: var(--slate);
+}
+
+/* Why Rita discarded the candidate. */
+.reason {
+  border-color: var(--rose-line);
+  color: var(--rose-ink);
+}
+
+.ring {
+  grid-area: ring;
+  justify-self: end;
+  position: relative;
+  width: 104px;
+  height: 104px;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+}
+
+.ring svg {
+  position: absolute;
+  inset: 0;
+  rotate: -90deg;
+  overflow: visible;
+}
+
+.track,
+.progress {
+  fill: none;
+  stroke-width: 7;
+}
+
+.track {
+  stroke: color-mix(in srgb, var(--violet) 16%, transparent);
+}
+
+/* Fills once on arrival, up to the share Rita captured (the dash length set in the markup). */
+.progress {
+  stroke: url(#completeness);
+  stroke-linecap: round;
+  filter: drop-shadow(0 0 6px var(--glow-coral));
+  animation: fill 1.2s var(--ease-out) 0.2s both;
+}
+
+.ringValue {
+  font-size: 15px;
+  font-variant-numeric: tabular-nums;
+  color: var(--ash);
+}
+
+.ringValue strong {
+  font-size: 30px;
+  font-weight: 600;
+  letter-spacing: -0.04em;
+  color: var(--white);
+}
+
+.ringLabel {
+  color: var(--ash);
+}
+
+.columns,
+.stack {
+  display: grid;
+  gap: 16px;
+  align-items: start;
+}
+
+.heading {
+  margin: 0 0 18px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--white);
+}
+
+.aside {
+  margin-left: auto;
+}
+
+/* Rita's summary: the highlight of the page (only once there is one). */
+.summary {
+  position: relative;
+  overflow: hidden;
+  border-color: color-mix(in srgb, var(--amber) 22%, transparent);
+  background:
+    radial-gradient(80% 120% at 0% 0%, color-mix(in srgb, var(--violet) 18%, transparent), transparent 60%),
+    radial-gradient(60% 100% at 100% 100%, color-mix(in srgb, var(--coral) 12%, transparent), transparent 60%),
+    var(--glass);
+}
+
+/* A large aurora quotation mark in the corner. */
+.summary::after {
+  content: "\201C" / "";
+  position: absolute;
+  top: 4px;
+  right: 22px;
+  font-size: 112px;
+  font-weight: 600;
+  line-height: 1;
+  background: var(--aurora);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  opacity: 0.4;
+  pointer-events: none;
+}
+
+.quote {
+  position: relative;
+  margin: 0;
+  padding-left: 18px;
+  border-left: 2px solid transparent;
+  border-image: linear-gradient(180deg, var(--violet), var(--coral), var(--amber)) 1;
+}
+
+.quote blockquote {
+  margin: 0;
+  font-size: 19px;
+  line-height: 1.5;
+  letter-spacing: -0.01em;
+  color: var(--white);
+}
+
+.quote figcaption {
+  margin-top: 12px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ash);
+}
+
+/* Each field spans two rows of the grid (label, value), so the values of a row line up
+   even when a label wraps on a narrow phone. */
+.fields {
+  margin: 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.fields div {
+  grid-row: span 2;
+  display: grid;
+  grid-template-rows: subgrid;
+  row-gap: 4px;
+  padding: 12px 14px;
+  border-radius: 16px;
+  background: var(--fill-1);
+  border: 1px solid var(--hairline);
+}
+
+.fields dt {
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--slate);
+}
+
+.fields dd {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 500;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+  color: var(--white);
+}
+
+/* Not captured yet: a dashed outline, quieter value. */
+.fields .missing {
+  background: transparent;
+  border-style: dashed;
+}
+
+.missing dd {
+  color: var(--slate);
+}
+
+.log {
+  display: flex;
+  flex-direction: column;
+  padding-bottom: 8px;
+}
+
+@keyframes fill {
+  from {
+    stroke-dasharray: 0 1;
+  }
+}
+
+/* Tablets and up: avatar, name and ring on one line, the timeline as a three-column strip. */
+@media (min-width: 640px) {
+  .profile {
+    grid-template-columns: auto 1fr auto;
+    grid-template-areas:
+      "avatar identity ring"
+      "facts facts facts";
+    gap: 24px;
+    padding: 28px 28px 0;
+  }
+
+  .facts {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    margin: 0 -28px;
+  }
+
+  .facts > span {
+    flex-direction: column;
+    gap: 6px;
+    padding: 16px 28px 18px;
+    font-size: 15px;
+  }
+
+  .facts > span + span {
+    border-left: 1px solid var(--hairline);
+  }
+}
+
+@media (min-width: 900px) {
+  .profile {
+    gap: 28px;
+    padding: 32px 36px 0;
+  }
+
+  .facts {
+    margin: 0 -36px;
+  }
+
+  .facts > span {
+    padding: 18px 36px 20px;
+  }
+
+  .ring {
+    width: 128px;
+    height: 128px;
+  }
+
+  .columns {
+    grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+    gap: 20px;
+  }
+
+  .stack {
+    gap: 20px;
+  }
+
+  /* The transcript stays in view while the left column scrolls. */
+  .log {
+    position: sticky;
+    top: 24px;
+    max-height: calc(100dvh - 48px);
+  }
+}

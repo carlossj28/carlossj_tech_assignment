@@ -1,28 +1,19 @@
-/* Recruiter panel: same Dimension tokens as the chat (globals.css). */
+/* Recruiter panel: same Aurora tokens as the chat (globals.css). */
 .page {
-  max-width: 960px;
+  position: relative;
+  isolation: isolate;
+  max-width: 1200px;
+  min-height: 100dvh;
   margin: 0 auto;
-  padding: 48px 16px;
+  padding: 0 16px 64px;
   display: flex;
   flex-direction: column;
   gap: 24px;
 }
 
-.narrow {
-  max-width: 420px;
-}
-
-.header {
+.bar {
+  height: 64px;
   display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 16px;
-}
-
-.toolbar {
-  width: 100%;
-  display: flex;
-  flex-wrap: wrap;
   justify-content: space-between;
   align-items: center;
   gap: 12px;
@@ -33,36 +24,46 @@
   gap: 8px;
 }
 
-.title {
-  margin: 0;
-  font-family: var(--font-display), sans-serif;
-  font-weight: 500;
-  font-size: clamp(36px, 7vw, 56px);
-  line-height: 1;
-  letter-spacing: -0.035em;
-  color: var(--white);
+.intro {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
+  padding-top: 8px;
 }
 
-.subtitle {
-  margin: 0;
-  font-family: var(--font-display), sans-serif;
-  font-weight: 500;
-  font-size: 18px;
-  color: var(--white);
-}
-
-.tag,
-.chip {
-  border: 1px solid var(--hairline);
-  border-radius: var(--radius-pill);
-  padding: 4px 12px;
+/* Section label: small sans with an aurora tick (mono is kept for metadata). */
+.kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
   font-size: 13px;
   font-weight: 500;
-  letter-spacing: 0.025em;
-  color: var(--bone);
+  color: var(--ash);
 }
 
-.chip {
+.kicker::before {
+  content: "";
+  width: 14px;
+  height: 2px;
+  border-radius: 1px;
+  background: var(--aurora);
+}
+
+.title {
+  margin: 0;
+  font-size: clamp(44px, 9vw, 80px);
+  font-weight: 600;
+  line-height: 0.95;
+  letter-spacing: -0.05em;
+  color: var(--white);
+}
+
+.lead {
+  margin: 0;
+  max-width: 52ch;
+  font-size: 16px;
+  line-height: 1.55;
   color: var(--ash);
 }
 
@@ -74,158 +75,550 @@
 
 .error {
   margin: 0;
+  padding: 12px 16px;
+  border-radius: 16px;
+  background: var(--rose-fill);
+  border: 1px solid var(--rose-line);
   font-size: 14px;
-  color: var(--ash);
+  color: var(--rose-ink);
+}
+
+/* Glass surfaces. No backdrop blur here: the light behind them is soft already, so the blur
+   would cost a full re-render per frame while scrolling for no visible change. */
+.panel,
+.stat,
+.table,
+.empty {
+  background: var(--glass);
+  border: 1px solid var(--hairline);
+  box-shadow: var(--glass-shadow);
+}
+
+.panel {
+  border-radius: var(--radius-card);
+  padding: 22px;
 }
 
 /* Buttons */
 .ghost,
 .primary,
 .tab {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
   font: inherit;
   font-size: 14px;
   font-weight: 500;
   border-radius: var(--radius-pill);
   padding: 8px 16px;
+  white-space: nowrap;
   cursor: pointer;
+  transition: background 0.2s, border-color 0.2s, color 0.2s, transform 0.2s var(--ease-out);
 }
 
 .ghost {
   color: var(--bone);
-  background: transparent;
-  border: 1px solid var(--hairline);
+  background: var(--fill-1);
+  border: 1px solid var(--hairline-strong);
+}
+
+.ghost:hover {
+  background: var(--fill-3);
+}
+
+.ghost svg,
+.arrow {
+  width: 16px;
+  height: 16px;
+  flex: none;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
 .primary {
-  color: var(--graphite);
+  color: var(--ink);
   background: var(--white);
   border: none;
-  padding: 12px 20px;
+  padding: 14px 22px;
   font-size: 15px;
+  font-weight: 600;
+  box-shadow: 0 12px 36px -12px var(--glow-amber);
+  transition: transform 0.2s var(--ease-out), box-shadow 0.3s var(--ease-out);
 }
 
-/* Status filter */
-.tabs {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
+.primary:hover {
+  transform: translateY(-1px);
+  box-shadow:
+    var(--ring),
+    0 12px 36px -10px var(--glow-coral);
 }
 
-.tab {
-  color: var(--ash);
-  background: transparent;
-  border: 1px solid var(--hairline);
+.primary:active {
+  transform: scale(0.98);
 }
 
-.tab[aria-pressed="true"] {
-  color: var(--graphite);
-  background: var(--white);
-  border-color: var(--white);
-}
-
-.count {
-  opacity: 0.6;
-  margin-left: 4px;
-}
-
-/* Status pill: white = qualified, frosted = pending, outlined/muted = disqualified */
-.status {
-  border-radius: var(--radius-pill);
-  padding: 4px 12px;
-  font-size: 13px;
-  font-weight: 500;
-}
-
+/* Status: the class sets the colour, the pill and the dot read it. */
 .qualified {
-  background: var(--white);
-  color: var(--graphite);
+  --status: var(--mint);
 }
 
 .pending {
-  background: var(--frost);
-  color: var(--bone);
+  --status: var(--amber);
 }
 
 .disqualified {
+  --status: var(--rose);
+}
+
+.status {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 3px 10px 3px 9px;
+  border-radius: var(--radius-pill);
+  background: color-mix(in srgb, var(--status) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--status) 30%, transparent);
+  font-size: 13px;
+  font-weight: 500;
+  white-space: nowrap;
+  color: color-mix(in srgb, var(--status) 45%, var(--white));
+}
+
+.dot {
+  flex: none;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--status);
+  box-shadow: 0 0 10px var(--status);
+}
+
+/* Pending is still open: its dot breathes (opacity only). */
+.pending .dot,
+.dot.pending {
+  animation: pulse 2.2s ease-in-out infinite;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 9px;
   border: 1px solid var(--hairline);
+  border-radius: var(--radius-pill);
+  font-size: 12.5px;
+  font-weight: 500;
+  white-space: nowrap;
+  color: var(--ash);
+}
+
+.idle::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  border: 1.5px solid var(--slate);
+}
+
+/* Avatar: initials on a pool of the person's hue, inside a ring of it (--a leads, --b trails). */
+.avatar {
+  --a: var(--violet);
+  --b: var(--cobalt);
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: var(--size);
+  height: var(--size);
+  border-radius: 50%;
+  border: 1.5px solid transparent;
+  background:
+    radial-gradient(circle at 30% 25%, color-mix(in srgb, var(--a) 34%, var(--graphite)), var(--graphite) 80%) padding-box,
+    linear-gradient(135deg, var(--a), var(--b)) border-box;
+  font-size: calc(var(--size) * 0.36);
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: color-mix(in srgb, var(--a) 30%, var(--white));
+}
+
+.tone0 {
+  --a: var(--amber);
+  --b: var(--rim);
+}
+
+.tone1 {
+  --a: var(--coral);
+  --b: var(--amber);
+}
+
+.tone2 {
+  --a: var(--cobalt);
+  --b: var(--sky);
+}
+
+.tone3 {
+  --a: var(--violet);
+  --b: var(--cobalt);
+}
+
+.tone4 {
+  --a: var(--magenta);
+  --b: var(--violet);
+}
+
+.tone5 {
+  --a: var(--sky);
+  --b: var(--violet);
+}
+
+.tone6 {
+  --a: var(--rim);
+  --b: var(--coral);
+}
+
+.anonymous {
+  background:
+    linear-gradient(var(--graphite), var(--graphite)) padding-box,
+    linear-gradient(var(--hairline-strong), var(--hairline-strong)) border-box;
   color: var(--slate);
 }
 
-/* List */
+/* KPI bento. Every tile spans the same four rows (label, value, meter, note) of the bento's grid,
+   so values and notes line up across tiles, also when a note wraps or a tile has no meter. */
+.stats {
+  margin: 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-auto-rows: auto auto 4px auto;
+  gap: 12px;
+}
+
+/* Each tile carries a pool of its colour in the top corner. */
+.stat {
+  --tone: var(--violet);
+  grid-row: span 4;
+  display: grid;
+  grid-template-rows: subgrid;
+  row-gap: 6px;
+  padding: 16px 18px;
+  border-radius: 24px;
+  background: radial-gradient(140px 140px at 100% 0%, color-mix(in srgb, var(--tone) 30%, transparent), transparent), var(--glass);
+}
+
+.stat[data-tone="mint"] {
+  --tone: var(--mint);
+}
+
+.stat[data-tone="amber"] {
+  --tone: var(--amber);
+}
+
+.stat[data-tone="slate"] {
+  --tone: var(--slate);
+}
+
+.stat dt {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ash);
+}
+
+.stat dt::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--tone);
+  box-shadow: 0 0 8px var(--tone);
+}
+
+.stat dd {
+  margin: 0;
+}
+
+.stat .value {
+  margin-top: 6px;
+  font-size: 44px;
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: -0.05em;
+  font-variant-numeric: tabular-nums;
+  color: var(--white);
+}
+
+.stat .value small {
+  margin-left: 2px;
+  font-size: 0.5em;
+  letter-spacing: 0;
+  color: var(--ash);
+}
+
+.meter {
+  grid-row: 3;
+  height: 4px;
+  border-radius: 2px;
+  background: color-mix(in srgb, var(--tone) 18%, transparent);
+  overflow: hidden;
+}
+
+.meter span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--tone);
+  box-shadow: 0 0 12px var(--tone);
+  transition: width 0.8s var(--ease-out);
+}
+
+.statNote {
+  grid-row: 4;
+  font-size: 12.5px;
+  font-variant-numeric: tabular-nums;
+  color: var(--slate);
+}
+
+/* Status filter: one row. On phones it scrolls sideways, fading out at the edges. */
+.tabs {
+  display: flex;
+  gap: 8px;
+  margin: 4px -16px -4px;
+  padding: 4px 16px 8px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  mask-image: linear-gradient(90deg, transparent, #000 16px, #000 calc(100% - 40px), transparent);
+}
+
+/* Lets the last tab scroll clear of the fade. */
+.tabs::after {
+  content: "";
+  flex: none;
+  width: 24px;
+}
+
+.tab {
+  flex: none;
+  color: var(--ash);
+  background: var(--fill-1);
+  border: 1px solid var(--hairline);
+  padding: 7px 14px;
+}
+
+.tab:hover {
+  border-color: var(--hairline-strong);
+  color: var(--bone);
+}
+
+.tab:focus-visible {
+  outline-offset: 1px;
+}
+
+.tab[aria-pressed="true"] {
+  color: var(--ink);
+  background: var(--white);
+  border-color: var(--white);
+  box-shadow: 0 8px 24px -12px color-mix(in srgb, var(--white) 45%, transparent);
+}
+
+.count {
+  font-family: var(--font-mono), monospace;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  opacity: 0.7;
+}
+
+@media (min-width: 640px) {
+  .tabs {
+    margin: 8px 0 0;
+    padding: 0;
+    overflow: visible;
+    mask-image: none;
+  }
+
+  .tabs::after {
+    display: none;
+  }
+}
+
+/* Table */
+.table {
+  border-radius: 22px;
+  overflow: hidden;
+}
+
+.columns {
+  display: none;
+}
+
 .list {
   list-style: none;
   margin: 0;
   padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
 }
 
+.list li + li {
+  border-top: 1px solid var(--hairline);
+}
+
+.list li,
+.stat {
+  animation: rise 0.5s var(--ease-out) both;
+  animation-delay: calc(min(var(--i), 8) * 45ms); /* capped: a long list is fully in within ~0.8s */
+}
+
+/* Phones and tablets: name with the status on its right, then the conversation's tags and the time. */
 .row {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: space-between;
+  display: grid;
+  grid-template-columns: 36px minmax(0, 1fr) auto;
+  grid-template-areas:
+    "avatar who state"
+    "avatar tags when";
   align-items: center;
-  gap: 12px;
-  padding: 16px 20px;
-  background: var(--frost);
-  border-radius: var(--radius-bubble);
+  column-gap: 12px;
+  row-gap: 8px;
+  padding: 14px 16px;
+  transition: background 0.2s;
 }
 
 .row:hover {
-  box-shadow: inset 0 0 0 1px var(--hairline);
+  background: var(--fill-1);
+}
+
+.row:focus-visible {
+  outline-offset: -2px;
+  border-radius: 22px;
+}
+
+.row .avatar {
+  grid-area: avatar;
+  align-self: start;
+}
+
+.who {
+  grid-area: who;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
 }
 
 .name {
-  font-size: 16px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 15.5px;
   font-weight: 500;
+  letter-spacing: -0.01em;
   color: var(--white);
 }
 
-.meta {
+/* Why Rita discarded the candidate, right under the name. */
+.note {
+  font-size: 13px;
+  color: color-mix(in srgb, var(--rose-ink) 75%, transparent);
+}
+
+.state {
+  grid-area: state;
+  align-self: start;
+  display: flex;
+}
+
+.tags {
+  grid-area: tags;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
+  min-width: 0;
 }
 
-/* Detail */
-.detail {
-  display: grid;
-  gap: 16px;
+.tags .chip {
+  padding: 2px 8px;
+  font-size: 12px;
 }
 
-.panel {
+.when {
+  grid-area: when;
+  font-family: var(--font-mono), monospace;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  color: var(--ash);
+  justify-self: end;
+}
+
+.arrow {
+  display: none;
+  color: var(--slate);
+  transition: transform 0.2s var(--ease-out), color 0.2s;
+}
+
+.row:hover .arrow {
+  color: var(--white);
+  transform: translateX(3px);
+}
+
+/* Narrow phones: a little tighter so a row's tags stay on one line. */
+@media (max-width: 380px) {
+  .row {
+    column-gap: 10px;
+    padding: 14px;
+  }
+
+  .tags {
+    gap: 4px;
+  }
+
+  .tags .chip {
+    padding: 2px 7px;
+    font-size: 11.5px;
+  }
+
+  .state .status {
+    gap: 6px;
+    padding: 2px 9px 2px 8px;
+    font-size: 12.5px;
+  }
+}
+
+/* Loading: a sheen sweeps across (transform only). */
+.skeleton {
+  position: relative;
+  overflow: hidden;
+  height: 220px;
+  border-radius: 22px;
+  background: var(--fill-1);
+}
+
+.skeleton::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(100deg, transparent 30%, var(--fill-2) 50%, transparent 70%);
+  animation: shimmer 1.4s linear infinite;
+  will-change: transform;
+}
+
+.empty {
   display: flex;
   flex-direction: column;
-  gap: 16px;
-  background: var(--frost);
-  border-radius: 24px;
-  padding: 24px;
+  align-items: center;
+  gap: 10px;
+  padding: 48px 24px;
+  border-radius: var(--radius-card);
+  text-align: center;
 }
 
-.fields {
-  margin: 0;
-  display: grid;
-  gap: 12px;
-}
-
-.fields div {
-  display: flex;
-  justify-content: space-between;
-  gap: 16px;
-  padding-bottom: 12px;
-  border-bottom: 1px solid var(--hairline);
-}
-
-.fields dt {
-  color: var(--ash);
-  font-size: 14px;
-}
-
-.fields dd {
-  margin: 0;
-  text-align: right;
+.empty p {
+  margin: 8px 0 0;
+  font-size: 17px;
+  font-weight: 500;
   color: var(--white);
 }
 
@@ -234,7 +627,8 @@
   display: flex;
   flex-direction: column;
   gap: 8px;
-  font-size: 14px;
+  font-size: 13px;
+  font-weight: 500;
   color: var(--ash);
 }
 
@@ -242,20 +636,131 @@
   font: inherit;
   font-size: 16px;
   color: var(--bone);
-  background: var(--graphite);
-  border: 1px solid var(--hairline);
-  border-radius: var(--radius-pill);
-  padding: 12px 18px;
+  background: var(--well);
+  border: 1px solid var(--hairline-strong);
+  border-radius: 14px;
+  padding: 13px 16px;
   outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
 }
 
 .field:focus {
-  border-color: var(--ash);
+  border-color: color-mix(in srgb, var(--violet) 70%, transparent);
+  box-shadow: var(--ring);
 }
 
-@media (min-width: 800px) {
-  .detail {
-    grid-template-columns: 2fr 3fr;
-    align-items: start;
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+}
+
+@keyframes pulse {
+  50% {
+    opacity: 0.4;
+  }
+}
+
+@keyframes shimmer {
+  from {
+    transform: translateX(-100%);
+  }
+
+  to {
+    transform: translateX(100%);
+  }
+}
+
+/* Small screens: the bar's buttons show only their icon (their aria-label keeps the name). */
+@media (max-width: 639px) {
+  .buttonText {
+    display: none;
+  }
+
+  .bar .ghost {
+    padding: 9px;
+  }
+}
+
+@media (min-width: 900px) {
+  .page {
+    padding: 0 40px 96px;
+    gap: 28px;
+  }
+
+  .bar {
+    height: 88px;
+  }
+
+  .stats {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 16px;
+  }
+
+  .stat {
+    padding: 22px 24px;
+  }
+
+  .stat .value {
+    font-size: 64px;
+  }
+
+  /* Desktop table: one grid for the headings and every row (~60px tall). */
+  .columns,
+  .row {
+    grid-template-columns: 36px minmax(0, 1fr) 124px minmax(0, 220px) 128px 16px;
+    grid-template-areas: "avatar who state tags when arrow";
+    column-gap: 16px;
+  }
+
+  .columns {
+    display: grid;
+    padding: 12px 20px;
+    border-bottom: 1px solid var(--hairline);
+    white-space: nowrap;
+    color: var(--slate);
+  }
+
+  .columns :first-child {
+    grid-column: avatar / who;
+  }
+
+  .row {
+    min-height: 60px;
+    padding: 10px 20px;
+  }
+
+  .row .avatar,
+  .state {
+    align-self: center;
+  }
+
+  .when {
+    justify-self: start;
+  }
+
+  .tags {
+    flex-wrap: nowrap;
+  }
+
+  .tags .chip {
+    padding: 3px 9px;
+    font-size: 12.5px;
+  }
+
+  .arrow {
+    display: block;
+    grid-area: arrow;
+  }
+}
+
+@media (min-width: 1100px) {
+  .columns,
+  .row {
+    grid-template-columns: 36px minmax(0, 1fr) 140px minmax(0, 260px) 140px 16px;
+    column-gap: 20px;
+    padding-left: 24px;
+    padding-right: 24px;
   }
 }

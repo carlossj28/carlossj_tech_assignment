@@ -1,136 +1,493 @@
+/* Candidate chat. Mobile first: hero on top, then the glass card fills the rest of the screen.
+   The page is exactly one screen tall, so the composer is always in view (also with the keyboard open). */
 .page {
   position: relative;
   isolation: isolate;
-  max-width: 760px;
-  margin: 0 auto;
-  padding: 64px 16px 32px;
+  height: 100dvh;
   display: flex;
   flex-direction: column;
-  gap: 40px;
-  min-height: 100dvh;
+  padding: 0 16px 16px;
 }
 
-/* The style's only colour: a soft violet wash behind the headline. */
-.page::before {
-  content: "";
-  position: absolute;
-  inset: 0 0 auto;
-  height: 360px;
-  background: radial-gradient(50% 60% at 50% 0%, var(--violet-wash), transparent);
-  opacity: 0.45;
-  pointer-events: none;
-  z-index: -1;
+.bar,
+.layout {
+  width: 100%;
+  max-width: 760px;
+  margin: 0 auto;
 }
 
-.header {
+.bar {
+  flex: none;
+  height: 60px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+/* Way into the recruiter panel (a demo convenience): an icon on phones, a pill with its name from 640px. */
+.staff {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 38px;
+  height: 38px;
+  border: 1px solid var(--hairline-strong);
+  border-radius: var(--radius-pill);
+  background: var(--fill-1);
+  font-size: 13.5px;
+  font-weight: 500;
+  color: var(--bone);
+  transition: background 0.2s, border-color 0.2s;
+}
+
+.staff svg {
+  flex: none;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.6;
+  stroke-linecap: round;
+}
+
+.staff:hover {
+  background: var(--fill-3);
+  border-color: color-mix(in srgb, var(--white) 30%, transparent);
+}
+
+.staffText {
+  display: none;
+}
+
+@media (min-width: 640px) {
+  .staff {
+    width: auto;
+    padding: 0 16px 0 13px;
+  }
+
+  .staffText {
+    display: inline;
+  }
+}
+
+.layout {
+  flex: 1 1 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+
+.hero {
+  flex: none;
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: 16px;
+  gap: 12px;
+  padding-top: 8px;
+}
+
+.tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 5px 12px 5px 10px;
+  border: 1px solid var(--hairline-strong);
+  border-radius: var(--radius-pill);
+  background: var(--fill-1);
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--bone);
+}
+
+.spark {
+  background: var(--aurora);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
 }
 
 .title {
   margin: 0;
-  font-family: var(--font-display), sans-serif;
-  font-weight: 500;
-  font-size: clamp(44px, 9vw, 72px);
-  line-height: 1;
-  letter-spacing: -0.035em;
+  font-size: clamp(44px, 12.5vw, 96px);
+  font-weight: 600;
+  line-height: 0.95;
+  letter-spacing: -0.05em;
   color: var(--white);
 }
 
-.lead {
-  margin: 0;
-  font-size: 18px;
-  line-height: 1.5;
-  color: var(--ash);
+/* Rita's name carries the aurora. Behind it a warm halo breathes: opacity and scale only,
+   so the text itself is painted once and never again. */
+.glow {
+  position: relative;
+  background: var(--aurora);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
 }
 
-.tag {
-  border: 1px solid var(--hairline);
-  border-radius: var(--radius-pill);
-  padding: 6px 14px;
-  font-size: 13px;
-  font-weight: 500;
-  letter-spacing: 0.025em;
+.glow::after {
+  content: "";
+  position: absolute;
+  inset: 12% -8% 4%;
+  z-index: -1;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, color-mix(in srgb, var(--coral) 42%, transparent), transparent);
+  opacity: 0.55;
+  animation: halo 7s ease-in-out infinite alternate;
+  will-change: transform, opacity;
+}
+
+/* Bone on narrow screens, where the sunrise and the drifting blobs pass right behind it; ash from 1024px. */
+.lead {
+  margin: 0;
+  max-width: 34ch;
+  font-size: 17px;
+  line-height: 1.55;
   color: var(--bone);
 }
 
-.card {
-  flex: 1;
-  display: flex;
+.topics {
+  display: none;
   flex-direction: column;
-  gap: 16px;
-  background: var(--frost);
-  backdrop-filter: blur(4px);
-  border-radius: var(--radius-card);
-  padding: 20px;
-  min-height: 480px;
+  gap: 14px;
+  margin-top: 32px;
+  padding-top: 28px;
+  border-top: 1px solid var(--hairline);
 }
 
-.messages {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  overflow-y: auto;
-  max-height: 60dvh;
-}
-
-.bubble {
+.topics p {
   margin: 0;
-  max-width: 80%;
-  padding: 12px 18px;
-  border-radius: var(--radius-bubble);
+  max-width: 440px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.label {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--slate);
+}
+
+.topic {
+  padding: 7px 13px;
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-pill);
+  background: var(--fill-1);
+  font-size: 13px;
+  color: var(--bone);
+}
+
+/* The conversation card. Over the narrow layout's smooth light a blur would be invisible, so it only
+   frosts from 1024px, where the horizon's sharp rim passes behind it. */
+.card {
+  flex: 1 1 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--glass);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-card);
+  box-shadow: var(--glass-shadow);
+  overflow: hidden;
+}
+
+.agent {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--hairline);
+}
+
+.who {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.who strong {
   font-size: 16px;
-  line-height: 1.5;
-  white-space: pre-wrap;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--white);
+}
+
+.who span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 13px;
+  color: var(--ash);
+}
+
+.presence {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex: none;
+  color: var(--ash);
+}
+
+.presence::before {
+  content: "";
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--mint);
+  box-shadow: 0 0 10px var(--mint);
+}
+
+.busy::before {
+  background: var(--amber);
+  box-shadow: 0 0 10px var(--amber);
+  animation: pulse 1.2s ease-in-out infinite;
+}
+
+.offline::before {
+  background: var(--rose);
+  box-shadow: 0 0 10px var(--rose);
+}
+
+/* Messages */
+/* Grows to fill a sized card and scrolls inside it; elsewhere it takes its content height. */
+.messages {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 22px 14px 16px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--hairline-strong) transparent;
+  mask-image: linear-gradient(transparent, #000 24px);
+}
+
+.row {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  max-width: 94%;
+  animation: rise 0.5s var(--ease-out) both;
+}
+
+/* Bubbles of one run sit close together, like in a messaging app. */
+.row:not(.last) {
+  margin-bottom: -9px;
+}
+
+/* Keeps a run's bubbles aligned with the one that carries the orb. */
+.gutter {
+  flex: none;
+  width: 28px;
 }
 
 .rita {
   align-self: flex-start;
-  background: var(--graphite);
-  box-shadow: inset 0 0 0 1px var(--hairline);
 }
 
 .candidate {
   align-self: flex-end;
-  background: var(--white);
-  color: var(--graphite);
 }
 
-.typing {
+.bubble {
   margin: 0;
-  font-size: 13px;
-  color: var(--slate);
+  padding: 11px 16px;
+  border-radius: var(--radius-bubble);
+  font-size: 15.5px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.rita .bubble,
+.typing {
+  background: var(--fill-2);
+  border: 1px solid var(--hairline);
+  box-shadow: inset 0 1px 0 var(--fill-2);
+  color: var(--bone);
+}
+
+.candidate .bubble {
+  background: linear-gradient(180deg, var(--white), var(--pearl));
+  color: var(--ink);
+  box-shadow: 0 12px 32px -14px color-mix(in srgb, var(--violet) 60%, transparent);
+}
+
+/* Only the last bubble of a run points at its speaker. */
+.rita.last .bubble {
+  border-bottom-left-radius: 6px;
+}
+
+.candidate.last .bubble {
+  border-bottom-right-radius: 6px;
+}
+
+/* Three dots while Rita writes. */
+.typing {
+  display: inline-flex;
+  gap: 5px;
+  padding: 16px 18px;
+  border-radius: var(--radius-bubble) var(--radius-bubble) var(--radius-bubble) 6px;
+}
+
+.typing i {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--ash);
+  animation: blink 1.2s ease-in-out infinite;
+}
+
+.typing i:nth-child(2) {
+  animation-delay: 0.15s;
+}
+
+.typing i:nth-child(3) {
+  animation-delay: 0.3s;
+}
+
+/* The recruiter's read-only transcript: Rita's prompts step back so the answers can be skimmed. */
+.messages.transcript {
+  gap: 12px;
+  padding: 4px 0 12px;
+  mask-image: none;
+}
+
+.transcript .row {
+  max-width: 90%;
+}
+
+.transcript .row:not(.last) {
+  margin-bottom: -7px;
+}
+
+.transcript .gutter {
+  width: 22px;
+}
+
+.transcript .rita .bubble {
+  padding: 9px 14px;
+  background: none;
+  box-shadow: none;
+  font-size: 14.5px;
+  color: var(--ash);
+}
+
+.transcript .candidate .bubble {
+  font-size: 15.5px;
+  font-weight: 500;
+}
+
+/* Notices above the composer */
+.error,
+.done {
+  position: relative;
+  flex: none;
+  margin: 0 12px 4px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  border-radius: 16px;
+  font-size: 14px;
+  line-height: 1.45;
+  animation: rise 0.5s var(--ease-out) both;
 }
 
 .error {
-  margin: 0;
-  font-size: 14px;
-  color: var(--ash);
+  flex-wrap: wrap;
+  background: var(--rose-fill);
+  border: 1px solid var(--rose-line);
+  color: var(--rose-ink);
 }
 
 .error button {
   font: inherit;
-  color: var(--white);
-  background: none;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink);
+  background: var(--white);
   border: none;
-  text-decoration: underline;
+  border-radius: var(--radius-pill);
+  padding: 5px 14px;
   cursor: pointer;
 }
 
+/* The payoff of the interview: the check pops in, draws itself, and the border lights up once. */
+.done {
+  background: linear-gradient(90deg, color-mix(in srgb, var(--mint) 16%, transparent), color-mix(in srgb, var(--mint) 3%, transparent));
+  border: 1px solid color-mix(in srgb, var(--mint) 32%, transparent);
+  color: var(--ash);
+}
+
+.done::after {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  border: 1px solid var(--mint);
+  border-radius: inherit;
+  box-shadow:
+    0 0 32px -4px var(--glow-mint),
+    inset 0 0 24px -8px var(--glow-mint);
+  opacity: 0;
+  pointer-events: none;
+  animation: flash 2s var(--ease-out) 0.3s;
+}
+
+.done strong {
+  display: block;
+  font-size: 14.5px;
+  font-weight: 600;
+  color: var(--white);
+}
+
+.check {
+  flex: none;
+  width: 30px;
+  height: 30px;
+  overflow: visible;
+  filter: drop-shadow(0 0 10px var(--glow-mint));
+  animation: pop 0.6s var(--ease-spring) 0.15s both;
+}
+
+.check circle {
+  fill: var(--mint);
+}
+
+.check path {
+  fill: none;
+  stroke: var(--ink);
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  animation: draw 0.4s var(--ease-out) 0.5s forwards;
+}
+
+/* Composer */
 .composer {
+  flex: none;
+  margin: 8px 12px 0;
   display: flex;
   gap: 8px;
   padding: 6px;
-  background: var(--graphite);
-  border: 1px solid var(--hairline);
+  background: var(--well);
+  border: 1px solid var(--hairline-strong);
   border-radius: var(--radius-pill);
+  transition: border-color 0.2s, box-shadow 0.2s;
 }
 
 .composer:focus-within {
-  border-color: var(--ash);
+  border-color: color-mix(in srgb, var(--violet) 60%, transparent);
+  box-shadow:
+    var(--ring),
+    0 0 48px -12px var(--glow-coral);
 }
 
 .input {
@@ -141,7 +498,7 @@
   color: var(--bone);
   background: transparent;
   border: none;
-  padding: 8px 14px;
+  padding: 10px 14px;
   outline: none;
 }
 
@@ -149,36 +506,246 @@
   color: var(--slate);
 }
 
-.send {
-  font: inherit;
-  font-size: 15px;
-  font-weight: 500;
-  color: var(--graphite);
-  background: var(--white);
-  border: none;
-  border-radius: var(--radius-pill);
-  padding: 8px 18px;
-  cursor: pointer;
-}
-
-.send:disabled,
 .input:disabled {
   opacity: 0.4;
   cursor: not-allowed;
 }
 
-.done {
-  margin: 0;
-  display: flex;
-  flex-wrap: wrap;
+.send {
+  flex: none;
+  display: inline-flex;
   align-items: center;
-  gap: 12px;
+  gap: 6px;
+  font: inherit;
   font-size: 15px;
-  color: var(--ash);
+  font-weight: 600;
+  color: var(--ink);
+  background: var(--white);
+  border: 1px solid var(--white);
+  border-radius: var(--radius-pill);
+  padding: 9px 15px 9px 17px;
+  cursor: pointer;
+  box-shadow: 0 8px 28px -10px var(--glow-amber);
+  transition:
+    transform 0.2s var(--ease-out),
+    box-shadow 0.3s var(--ease-out),
+    background 0.2s,
+    border-color 0.2s,
+    color 0.2s;
 }
 
-@media (min-width: 640px) {
+.send svg {
+  flex: none;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* Ready to send: hovering or pressing lights the aurora around it. */
+.send:not(:disabled):hover,
+.send:not(:disabled):focus-visible {
+  transform: translateY(-1px);
+  box-shadow:
+    var(--ring),
+    0 10px 32px -8px var(--glow-coral),
+    0 0 40px -6px var(--glow-violet);
+}
+
+.send:not(:disabled):active {
+  transform: scale(0.97);
+  box-shadow:
+    0 0 0 5px color-mix(in srgb, var(--coral) 22%, transparent),
+    0 0 44px -4px var(--glow-coral);
+}
+
+/* Nothing to send (or Rita is writing): a ghost, clearly not pressable. */
+.send:disabled {
+  color: var(--slate);
+  background: transparent;
+  border-color: var(--hairline-strong);
+  box-shadow: none;
+  cursor: not-allowed;
+}
+
+.disclaimer {
+  flex: none;
+  margin: 0;
+  padding: 10px 16px 12px;
+  text-align: center;
+  font-size: 12px;
+  color: var(--slate);
+}
+
+@keyframes halo {
+  to {
+    opacity: 1;
+    transform: scale(1.08);
+  }
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.98);
+  }
+}
+
+@keyframes pulse {
+  50% {
+    opacity: 0.35;
+  }
+}
+
+@keyframes blink {
+  0%,
+  80%,
+  100% {
+    opacity: 0.25;
+    transform: none;
+  }
+  40% {
+    opacity: 1;
+    transform: translateY(-3px);
+  }
+}
+
+@keyframes pop {
+  from {
+    opacity: 0;
+    transform: scale(0.3);
+  }
+}
+
+@keyframes draw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes flash {
+  25% {
+    opacity: 1;
+  }
+}
+
+/* Short screens (small phones, or any phone with the keyboard open): the hero shrinks to its title. */
+@media (max-width: 1023px) and (max-height: 720px) {
+  .tag,
+  .lead {
+    display: none;
+  }
+
+  .title {
+    font-size: 34px;
+  }
+
+  .layout {
+    gap: 14px;
+  }
+}
+
+@media (max-width: 1023px) and (max-height: 480px) {
+  .disclaimer {
+    display: none;
+  }
+
+  .composer {
+    margin-bottom: 8px;
+  }
+}
+
+/* Narrow phones (360px): a little tighter so the header's subtitle and the placeholder fit whole. */
+@media (max-width: 374px) {
+  .agent {
+    gap: 10px;
+    padding-inline: 14px;
+  }
+
+  .presence {
+    gap: 6px;
+    letter-spacing: 0.06em;
+  }
+
+  .input {
+    padding: 10px 8px 10px 14px;
+  }
+
+  .send {
+    padding: 9px 13px 9px 15px;
+  }
+}
+
+/* Desktop: hero on the left, the card takes the full height on the right. */
+@media (min-width: 1024px) {
+  .page {
+    min-height: 640px;
+    padding: 0 40px 32px;
+  }
+
+  .bar,
+  .layout {
+    max-width: 1200px;
+  }
+
+  .bar {
+    height: 88px;
+  }
+
+  .layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) clamp(480px, 50%, 620px);
+    grid-template-rows: minmax(0, 1fr);
+    gap: clamp(40px, 5vw, 72px);
+  }
+
+  .hero {
+    justify-content: center;
+    gap: 20px;
+    padding: 0 0 8vh;
+  }
+
+  .title {
+    font-size: clamp(64px, 7.2vw, 104px);
+  }
+
+  .lead {
+    font-size: 19px;
+    color: var(--ash);
+  }
+
+  .topics {
+    display: flex;
+  }
+
   .card {
-    padding: 28px;
+    backdrop-filter: var(--glass-blur);
+  }
+
+  .agent {
+    padding: 18px 22px;
+  }
+
+  .row {
+    gap: 10px;
+    max-width: 86%;
+  }
+
+  .messages {
+    padding: 28px 22px 16px;
+  }
+
+  .error,
+  .done {
+    margin: 0 18px 4px;
+  }
+
+  .composer {
+    margin: 8px 18px 0;
+  }
+
+  .disclaimer {
+    padding: 12px 18px 14px;
   }
 }

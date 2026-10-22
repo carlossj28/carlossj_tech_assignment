@@ -27,6 +27,9 @@ export default function Composer({ disabled, onSend }: { disabled: boolean; onSe
       />
       <button className={styles.send} type="submit" disabled={disabled || !text.trim()}>
         Enviar
+        <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden>
+          <path d="M8 13V3M3.5 7.5 8 3l4.5 4.5" />
+        </svg>
       </button>
     </form>
   );

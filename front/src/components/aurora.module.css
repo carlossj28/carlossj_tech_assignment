@@ -1,0 +1,175 @@
+/* Sized in container units so the same light works for the viewport and for a panel. */
+.aurora {
+  --sun: color-mix(in srgb, var(--coral), var(--amber) 35%);
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  container-type: size;
+  z-index: -1;
+}
+
+.page,
+.quiet {
+  position: fixed;
+  --horizon: 80cqh;
+}
+
+/* The login's art panel: a short banner on phones (rim between the brand and the headline),
+   taller on tablets, and the left half of the screen from 960px (horizon near its middle). */
+.panel {
+  position: absolute;
+  z-index: 0;
+  --horizon: 30cqh;
+}
+
+@media (min-width: 640px) {
+  .panel {
+    --horizon: 40cqh;
+  }
+}
+
+/* On short screens the rim stays 350px above the panel's foot, clear of the headline. */
+@media (min-width: 960px) {
+  .panel {
+    --horizon: min(54cqh, 100cqh - 350px);
+  }
+}
+
+/* Light from the top, fading to the matte canvas where the content gets dense. */
+.quiet {
+  opacity: 0.55;
+  mask-image: linear-gradient(#000 40%, transparent);
+}
+
+/* Each blob is its own GPU layer and only its transform animates: no repaints while it drifts. */
+.blob {
+  position: absolute;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  will-change: transform;
+}
+
+.violet {
+  width: 85cqmax;
+  left: -30cqmax;
+  top: -45cqmax;
+  background: radial-gradient(
+    closest-side,
+    color-mix(in srgb, var(--violet) 60%, transparent),
+    color-mix(in srgb, var(--violet) 12%, transparent) 60%,
+    transparent
+  );
+  animation: drift-a 26s ease-in-out infinite alternate;
+}
+
+.coral {
+  width: 65cqmax;
+  right: -22cqmax;
+  top: -28cqmax;
+  background: radial-gradient(
+    closest-side,
+    color-mix(in srgb, var(--coral) 50%, transparent),
+    color-mix(in srgb, var(--amber) 16%, transparent) 55%,
+    transparent
+  );
+  animation: drift-b 32s ease-in-out infinite alternate;
+}
+
+.cobalt {
+  width: 75cqmax;
+  left: 15cqw;
+  top: 35cqh;
+  background: radial-gradient(
+    closest-side,
+    color-mix(in srgb, var(--cobalt) 42%, transparent),
+    color-mix(in srgb, var(--cobalt) 8%, transparent) 60%,
+    transparent
+  );
+  animation: drift-c 38s ease-in-out infinite alternate;
+}
+
+/* The "hero horizon": the curved edge of a dark planet, lit from behind. Plain gradients only:
+   Chrome clips very large box-shadow blurs into visible seams. */
+.glow,
+.horizon {
+  position: absolute;
+  left: 50%;
+  top: var(--horizon);
+}
+
+.glow {
+  width: 120cqw;
+  height: 70cqh;
+  translate: -50% -50%;
+  background: radial-gradient(
+    closest-side,
+    color-mix(in srgb, var(--sun) 42%, transparent),
+    color-mix(in srgb, var(--coral) 20%, transparent) 35%,
+    color-mix(in srgb, var(--violet) 16%, transparent) 60%,
+    transparent
+  );
+}
+
+.horizon {
+  width: max(240cqw, 1400px);
+  aspect-ratio: 1;
+  translate: -50% 0;
+  border-radius: 50%;
+  background: radial-gradient(50% 3% at 50% 0%, color-mix(in srgb, var(--rim) 20%, transparent), transparent), var(--canvas);
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--rim) 38%, transparent),
+    0 -2px 16px color-mix(in srgb, var(--sun) 45%, transparent);
+}
+
+/* Desktop chat: on short laptop screens the rim drops so it always passes under the hero's chips. */
+@media (min-width: 1024px) {
+  .page {
+    --horizon: max(80cqh, 46cqh + 290px);
+  }
+}
+
+/* Narrow chat: the conversation card covers the lower screen, so the rim would cut through
+   the messages. The sunrise glow rises behind the title instead and the planet stays out.
+   The blobs dim a little there too, so the small text above them keeps its contrast as they drift. */
+@media (max-width: 1023px) {
+  .page {
+    --horizon: 22cqh;
+  }
+
+  .page .blob {
+    opacity: 0.8;
+  }
+
+  .page .glow {
+    opacity: 0.7;
+  }
+
+  .page .horizon {
+    display: none;
+  }
+}
+
+.grain {
+  position: absolute;
+  inset: 0;
+  opacity: 0.08;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0.7 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+@keyframes drift-a {
+  to {
+    transform: translate(18cqw, 10cqh) scale(1.15);
+  }
+}
+
+@keyframes drift-b {
+  to {
+    transform: translate(-14cqw, 14cqh) scale(0.9);
+  }
+}
+
+@keyframes drift-c {
+  to {
+    transform: translate(-20cqw, -12cqh) scale(1.2);
+  }
+}
