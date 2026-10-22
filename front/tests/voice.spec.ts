@@ -90,6 +90,7 @@ test("the full transcript is one tap away", async ({ page }) => {
 test("after end_interview, Rita's goodbye ends the call for good", async ({ page }) => {
   await fakeCall(page);
   await startCall(page);
+  await expect(page.getByRole("link", { name: "Prefiero escribir" })).toBeVisible(); // mid-call: switching is fine
   const stored = page.waitForResponse("**/api/voice/tool"); // the back closes the interview first
   await rt(page, { type: "response.function_call_arguments.done", name: "end_interview", call_id: "1", arguments: "{}" });
   await expect(status(page)).toHaveText("Pensando…");
@@ -99,6 +100,7 @@ test("after end_interview, Rita's goodbye ends the call for good", async ({ page
 
   await expect(page.getByText("Entrevista terminada").first()).toBeVisible();
   await expect(page.getByRole("button", { name: /Llamar|Colgar/ })).toHaveCount(0);
+  await expect(page.getByRole("link", { name: "Prefiero escribir" })).toHaveCount(0); // no second interview by chat
 });
 
 test("a denied microphone shows an error and lets the candidate try again", async ({ page }) => {
