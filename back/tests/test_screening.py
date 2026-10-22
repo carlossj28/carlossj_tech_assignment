@@ -98,3 +98,10 @@ def test_unknown_tool_and_bad_args_dont_raise():
     assert dispatch("nope", {}, {})["ok"] is False
     assert dispatch("save_answer", {}, {"not_a_field": 1})["ok"] is False
     assert dispatch("end_interview", {}, {})["ok"] is False
+
+
+def test_end_interview_needs_a_known_sentiment():
+    ok = {"summary": "Apta, Madrid."}
+    assert dispatch("end_interview", {}, ok)["ok"] is False                           # missing
+    assert dispatch("end_interview", {}, {**ok, "sentiment": "angry"})["ok"] is False  # unknown
+    assert dispatch("end_interview", {}, {**ok, "sentiment": "frustrated"})["ok"] is True

@@ -37,7 +37,8 @@ OPENAI_TOOL_SCHEMAS: list[dict[str, Any]] = [
             "is fine. The result carries the screening status; on validation_error, re-ask.",
             SaveAnswerArgs),
     _schema("end_interview",
-            "Close the interview with a 2-3 sentence summary for the recruiter. Call once, "
+            "Close the interview with a 2-3 sentence summary and the candidate's tone for the "
+            "recruiter. Call once, "
             "after the confirmation or after saying goodbye on a knock-out.",
             EndInterviewArgs),
 ]

@@ -9,7 +9,7 @@ import Brand from "@/components/Brand";
 import MessageList from "@/components/MessageList";
 import Orb from "@/components/Orb";
 import StatusPill from "@/components/StatusPill";
-import { FIELDS, KNOCKOUT, formatDate, formatDuration, formatField, formatRelative } from "@/lib/labels";
+import { FIELDS, KNOCKOUT, SENTIMENT, formatDate, formatDuration, formatField, formatRelative } from "@/lib/labels";
 import { type ConversationDetail, getConversation } from "@/lib/recruiter";
 import shared from "../recruiter.module.css";
 import styles from "./detail.module.css";
@@ -79,10 +79,23 @@ export default function ConversationView() {
                 <h2 className={styles.heading}>
                   <Orb size={22} /> Resumen de Rita
                 </h2>
+                {conv.sentiment === "frustrated" && (
+                  <p className={`${shared.error} ${styles.alert}`} role="note">
+                    El candidato se mostró frustrado. Revisa la conversación antes de contactarle.
+                  </p>
+                )}
                 {conv.summary ? (
                   <figure className={styles.quote}>
                     <blockquote>{conv.summary}</blockquote>
-                    <figcaption>— Rita, asistente de selección</figcaption>
+                    <figcaption>
+                      — Rita, asistente de selección
+                      {conv.sentiment && (
+                        <span className={`${shared.status} ${styles[conv.sentiment]}`}>
+                          <span className={shared.dot} aria-hidden />
+                          Tono: {SENTIMENT[conv.sentiment]}
+                        </span>
+                      )}
+                    </figcaption>
                   </figure>
                 ) : (
                   <p className={shared.muted}>Todavía sin resumen.</p>

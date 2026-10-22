@@ -18,15 +18,17 @@ _DEMO = [  # one exchange each, written through the real save path
          fields={"full_name": "Marta Gil", "has_driver_license": True, "city": "Madrid",
                  "availability": ["full_time"], "preferred_schedule": ["morning"],
                  "prior_experience": {"years": 2, "platforms": ["Glovo"]}, "start_date": "2026-11-03"},
-         completed=True, summary="Repartidora con 2 años en Glovo; Madrid; jornada completa."),
-    dict(source="chat", rita="¿Tienes carné de conducir?", user="No, todavía no",
+         completed=True, summary="Repartidora con 2 años en Glovo; Madrid; jornada completa.",
+         sentiment="positive"),
+    dict(source="chat", rita="¿Tienes carné de conducir?", user="No. Es la tercera oferta que me lo pide, qué rollo",
          reply="Gracias, Jorge. Para este puesto el carné es imprescindible.",
          fields={"full_name": "Jorge Ruiz", "has_driver_license": False},
-         completed=True, summary="Sin carné de conducir; descartado."),
+         completed=True, summary="Sin carné de conducir; descartado. Se quejó del requisito.",
+         sentiment="frustrated"),
     dict(source="voice", rita="¿En qué ciudad te gustaría trabajar?", user="En Ciudad de México",
          reply="¡Perfecto! ¿Qué disponibilidad tienes?",
          fields={"full_name": "Elena Sanz", "has_driver_license": True, "city": "Ciudad de México"},
-         completed=False, summary=None),  # hung up mid-call: qualified but inactive
+         completed=False, summary=None, sentiment=None),  # hung up mid-call: qualified but inactive
 ]
 
 
@@ -46,7 +48,8 @@ def run() -> None:
         cid = db.start_conversation(d["source"], d["rita"])
         status, knockout = screening_status(d["fields"])
         result = TurnResult(reply=d["reply"], extracted=d["fields"], completed=d["completed"],
-                            status=status, knockout=knockout, summary=d["summary"])
+                            status=status, knockout=knockout, summary=d["summary"],
+                            sentiment=d["sentiment"])
         with db.pool().connection() as conn:
             db.save_turn(conn, cid, d["user"], result)
     print(f"seeded {len(_DEMO)} demo conversations")

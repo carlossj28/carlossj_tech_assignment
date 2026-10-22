@@ -57,6 +57,7 @@ def test_detail_has_data_and_text_turns(api):
     cid = _conversation(0)
     body = api.get(f"/api/recruiter/conversations/{cid}").json()
     assert body["extracted_fields"] == {} and body["summary"] is None
+    assert body["sentiment"] is None
     assert [(t["role"], t["content"]) for t in body["turns"]] == [("assistant", "¡Hola!")]
     assert "tool_calls" not in body["turns"][0]
 

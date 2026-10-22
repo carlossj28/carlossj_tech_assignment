@@ -13,6 +13,7 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 Availability = Literal["full_time", "part_time", "weekends"]
 Schedule = Literal["morning", "afternoon", "evening", "flexible"]
+Sentiment = Literal["positive", "neutral", "frustrated"]
 
 
 class Experience(BaseModel):
@@ -43,3 +44,4 @@ class SaveAnswerArgs(BaseModel):
 class EndInterviewArgs(BaseModel):
     model_config = ConfigDict(extra="forbid")
     summary: str = Field(min_length=1, description="2-3 sentences for the recruiter.")
+    sentiment: Sentiment = Field(description="The candidate's tone in the conversation, not the outcome.")

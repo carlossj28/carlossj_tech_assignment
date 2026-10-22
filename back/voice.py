@@ -82,7 +82,8 @@ def tool(body: ToolBody) -> dict:
         ends = body.name == "end_interview" and out.get("ok")
         db.save_voice_data(conn, body.conversation_id, extracted, *screening_status(extracted),
                            completed=conv["completed"] or bool(ends),
-                           summary=body.args["summary"] if ends else None)
+                           summary=body.args["summary"] if ends else None,
+                           sentiment=body.args["sentiment"] if ends else None)
     return out
 
 

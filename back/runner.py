@@ -38,6 +38,7 @@ class TurnResult:
     status: str = "pending"        # computed from the data, never by the model (ADR-017)
     knockout: str | None = None
     summary: str | None = None
+    sentiment: str | None = None   # the candidate's tone, set by Rita on close
 
 
 def _model_kwargs() -> dict[str, str]:
@@ -93,7 +94,7 @@ def run_turn(history: list[dict], extracted: dict, *, client=None) -> TurnResult
                 args, out = {}, {"ok": False, "validation_error": "arguments are not valid JSON"}
             result.tool_calls.append({"name": tc.function.name, "args": args, "result": out})
             if tc.function.name == "end_interview" and out.get("ok"):
-                result.completed, result.summary = True, args["summary"]
+                result.completed, result.summary, result.sentiment = True, args["summary"], args["sentiment"]
             messages.append({"role": "tool", "tool_call_id": tc.id, "content": json.dumps(out)})
 
     result.reply = TECH_ERROR
