@@ -9,6 +9,7 @@ import Brand from "./Brand";
 import Composer from "./Composer";
 import MessageList, { type Message } from "./MessageList";
 import Orb from "./Orb";
+import PhoneIcon from "./PhoneIcon";
 import styles from "./chat.module.css";
 
 const NUDGE_AFTER_MS = 60_000; // silence before asking Rita for a reminder (ADR-018)
@@ -105,6 +106,11 @@ export default function Chat() {
             Habla con <span className={styles.glow}>Rita</span>
           </h1>
           <p className={styles.lead}>Unas preguntas rápidas sobre tu candidatura. Tardas menos de 5 minutos.</p>
+          <Link className={styles.callCta} href="/voz">
+            <PhoneIcon />
+            ¿Prefieres hablar? <strong>Llama a Rita</strong>
+            <span aria-hidden>→</span>
+          </Link>
           <div className={styles.topics}>
             <span className={styles.label}>Te preguntará por</span>
             <p>
@@ -147,7 +153,7 @@ export default function Chat() {
           {/* Stays enabled after completion: a new message reopens the conversation (ADR-028). */}
           <Composer disabled={!conversationId || typing} onSend={send} />
           <p className={styles.disclaimer}>
-            Rita es una IA · Responde con tus palabras, sin prisa. · <Link href="/voz">Prefiero hablar</Link>
+            Rita es una IA · Responde con tus palabras, sin prisa.
           </p>
         </section>
       </div>

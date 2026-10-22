@@ -6,11 +6,36 @@ import * as api from "@/lib/api";
 import Aurora from "./Aurora";
 import Brand from "./Brand";
 import MessageList, { type Message } from "./MessageList";
-import Orb from "./Orb";
+import PhoneIcon from "./PhoneIcon";
+import VoiceOrb, { type Mood } from "./VoiceOrb";
 import styles from "./chat.module.css";
+import voice from "./voice.module.css";
 
 type State = "idle" | "connecting" | "live" | "ended" | "done"; // done: Rita closed the interview
 type Turn = { role: "user" | "assistant"; text: string };
+
+// Realtime events that change Rita's mood on screen.
+const MOOD: Record<string, Mood> = {
+  "input_audio_buffer.speech_started": "listening",
+  "input_audio_buffer.speech_stopped": "thinking",
+  "response.function_call_arguments.done": "thinking",
+  "output_audio_buffer.started": "speaking",
+  "output_audio_buffer.stopped": "listening",
+};
+const MOOD_LABEL: Record<Mood, string> = { idle: "En línea", listening: "Te escucho…", speaking: "Hablando…", thinking: "Pensando…" };
+
+// Live loudness (0–1) of an audio stream, so the orb moves with the real voice.
+function meter(audio: AudioContext, stream: MediaStream) {
+  const analyser = audio.createAnalyser();
+  audio.createMediaStreamSource(stream).connect(analyser);
+  const wave = new Uint8Array(analyser.fftSize);
+  return () => {
+    analyser.getByteTimeDomainData(wave);
+    let peak = 0;
+    for (const v of wave) peak = Math.max(peak, Math.abs(v - 128));
+    return Math.min(1, peak / 64);
+  };
+}
 
 // Voice call with Rita: audio goes browser ↔ OpenAI (WebRTC); we relay to the back only
 // what must be stored — tool calls and finished sentences. Same brain as the chat.
@@ -18,6 +43,10 @@ export default function Voice() {
   const [state, setState] = useState<State>("idle");
   const [messages, setMessages] = useState<Message[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [mood, setMood] = useState<Mood>("idle");
+  const [showAll, setShowAll] = useState(false); // full transcript instead of subtitles
+  const audio = useRef<AudioContext | null>(null);
+  const meters = useRef<Partial<Record<Mood, () => number>>>({}); // candidate's mic while listening, Rita while speaking
   const pc = useRef<RTCPeerConnection | null>(null);
   const cid = useRef("");
   const pending = useRef<Turn[]>([]); // Rita's sentences before the candidate speaks (not stored alone)
@@ -43,17 +72,23 @@ export default function Voice() {
     setError(null);
     setMessages([]);
     setState("connecting");
+    setMood("thinking");
     ending.current = "no";
     try {
       const mic = await navigator.mediaDevices.getUserMedia({ audio: true });
       const { conversation_id, client_secret } = await api.voiceSession();
       cid.current = conversation_id;
+      audio.current = new AudioContext();
+      meters.current = { listening: meter(audio.current, mic) };
 
       const conn = new RTCPeerConnection();
       pc.current = conn;
       const speaker = new Audio();
       speaker.autoplay = true;
-      conn.ontrack = (e) => (speaker.srcObject = e.streams[0]);
+      conn.ontrack = (e) => {
+        speaker.srcObject = e.streams[0];
+        meters.current.speaking = meter(audio.current!, e.streams[0]);
+      };
       conn.addTrack(mic.getTracks()[0]);
 
       const events = conn.createDataChannel("oai-events");
@@ -64,6 +99,7 @@ export default function Voice() {
       };
       events.onmessage = (e) => {
         const ev = JSON.parse(e.data);
+        if (MOOD[ev.type]) setMood(MOOD[ev.type]);
         if (ev.type === "conversation.item.input_audio_transcription.completed" && ev.transcript?.trim())
           sentence({ role: "user", text: ev.transcript.trim() });
         else if (ev.type === "response.output_audio_transcript.done" && ev.transcript?.trim())
@@ -108,6 +144,9 @@ export default function Voice() {
     pc.current?.getSenders().forEach((s) => s.track?.stop());
     pc.current?.close();
     pc.current = null;
+    audio.current?.close();
+    audio.current = null;
+    setMood("idle");
     setState((s) => (s === "live" ? "ended" : s));
   }
 
@@ -120,12 +159,20 @@ export default function Voice() {
   useEffect(() => hangUp, []); // leaving the page ends the call
 
   const live = state === "live";
+  const lastRita = messages.findLast((m) => m.role === "rita")?.text;
+  const lastYou = messages.findLast((m) => m.role === "candidate")?.text;
   return (
     <main className={styles.page}>
       <Aurora />
       <header className={styles.bar}>
         <Brand area="Repartidores" />
-        <Link className={styles.staff} href="/">Prefiero escribir</Link>
+        {/* Back to the text chat; on a phone it shrinks to an icon, like the chat's recruiter link. */}
+        <Link className={styles.staff} href="/" aria-label="Prefiero escribir">
+          <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden>
+            <path d="M4.5 11.5a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h7a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2H7.5l-3 2.5Z" />
+          </svg>
+          <span className={styles.staffText}>Prefiero escribir</span>
+        </Link>
       </header>
 
       <div className={styles.layout}>
@@ -136,29 +183,49 @@ export default function Voice() {
           <p className={styles.lead}>Una llamada corta sobre tu candidatura. Necesitas micrófono.</p>
         </section>
 
-        <section className={styles.card} aria-label="Llamada con Rita">
-          <div className={styles.agent}>
-            <Orb size={44} active={live} />
-            <span className={styles.who}>
-              <strong>Rita</strong>
-              <span>Asistente de selección</span>
-            </span>
-            <span className={`${styles.presence} eyebrow ${live ? styles.busy : ""}`}>
-              {{ idle: "Lista", connecting: "Conectando…", live: "En llamada", ended: "Llamada terminada", done: "Entrevista terminada" }[state]}
-            </span>
+        <section className={`${styles.card} ${voice.card}`} aria-label="Llamada con Rita">
+          <div className={`${voice.stage} ${showAll ? voice.compact : ""}`}>
+            <div className={voice.orb}>
+              <VoiceOrb mood={mood} level={() => meters.current[mood]?.() ?? 0} />
+            </div>
+            <p className={`${voice.status} ${live ? voice.on : ""} eyebrow`}>
+              {live ? MOOD_LABEL[mood] : { idle: "Rita · Asistente de selección", connecting: "Conectando…", ended: "Llamada terminada", done: "Llamada finalizada" }[state]}
+            </p>
           </div>
 
-          <MessageList messages={messages} />
+          {/* During the call only the last lines show, like subtitles; the full transcript is one tap away. */}
+          {showAll ? (
+            <MessageList messages={messages} />
+          ) : (
+            <div className={voice.subtitles} aria-live="polite">
+              <p className={voice.said} data-role="rita">{lastRita ?? "Pulsa Llamar y Rita te saludará."}</p>
+              {lastYou && <p className={voice.you}>Tú: «{lastYou}»</p>}
+            </div>
+          )}
+
           {error && <p className={styles.error} role="alert">{error}</p>}
           {state === "done" ? (
-            <p className={styles.disclaimer}>Entrevista terminada. ¡Gracias! El equipo de selección revisará tu candidatura.</p>
+            <p className={styles.done}>
+              <svg className={styles.check} viewBox="0 0 32 32" aria-hidden>
+                <circle cx="16" cy="16" r="15" />
+                <path d="m10 16.5 4 4 8-9" pathLength={1} />
+              </svg>
+              <span>
+                <strong>Entrevista terminada</strong> Gracias, el equipo de selección revisará tu candidatura.
+              </span>
+            </p>
           ) : (
-            <button className={styles.send} style={{ alignSelf: "center", margin: "12px 0 0" }}
-                    onClick={live ? hangUp : call} disabled={state === "connecting"}>
+            <button className={`${styles.send} ${voice.call} ${live ? voice.hangUp : ""}`} onClick={live ? hangUp : call} disabled={state === "connecting"}>
+              <PhoneIcon />
               {live ? "Colgar" : state === "ended" ? "Llamar de nuevo" : "Llamar"}
             </button>
           )}
-          <p className={styles.disclaimer}>Rita es una IA · La llamada se transcribe para el equipo de selección.</p>
+          {messages.length > 0 && (
+            <button className={voice.toggle} onClick={() => setShowAll((v) => !v)}>
+              {showAll ? "Volver a Rita" : "Ver conversación completa"}
+            </button>
+          )}
+          <p className={`${styles.disclaimer} ${voice.foot}`}>Rita es una IA · La llamada se transcribe para el equipo de selección.</p>
         </section>
       </div>
     </main>
