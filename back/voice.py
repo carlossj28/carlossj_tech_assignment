@@ -61,7 +61,8 @@ def session() -> dict:
         "instructions": SYSTEM_PROMPT + _VOICE_RULES,
         "tools": _TOOLS,
         # The candidate's words as text, so the recruiter can read the call.
-        "audio": {"input": {"transcription": {"model": "gpt-transcribe"}}},
+        "audio": {"input": {"transcription": {"model": "gpt-transcribe"}},
+                  "output": {"voice": "marin"}},  # a female voice: Rita
     })
     return {"conversation_id": str(uuid4()), "client_secret": secret.value}
 
