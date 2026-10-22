@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from collections.abc import Iterator
 from contextlib import contextmanager
-from uuid import UUID
+from uuid import UUID, uuid4
 
 import openai
 from fastapi import APIRouter, HTTPException
@@ -33,9 +33,11 @@ class NudgeBody(BaseModel):
 
 
 @contextmanager
-def _turn(cid: UUID) -> Iterator[tuple]:
+def _turn(cid: UUID, *, create: bool = False) -> Iterator[tuple]:
     """The open transaction + the locked conversation row, with the contract's errors."""
     with db.pool().connection() as conn:
+        if create:
+            db.ensure_conversation(conn, cid, GREETING)
         try:
             conv = db.lock_conversation(conn, cid)
         except db.Busy:
@@ -50,12 +52,13 @@ def _turn(cid: UUID) -> Iterator[tuple]:
 
 @router.post("/start")
 def start() -> dict:
-    return {"conversation_id": db.start_conversation("chat", GREETING), "greeting": GREETING}
+    # Nothing is stored yet: the first message creates the conversation.
+    return {"conversation_id": str(uuid4()), "greeting": GREETING}
 
 
 @router.post("/message")
 def message(body: MessageBody) -> dict:
-    with _turn(body.conversation_id) as (conn, conv):
+    with _turn(body.conversation_id, create=True) as (conn, conv):
         history = [*db.get_history(conn, conv["id"]), {"role": "user", "content": body.message}]
         result = run_turn(history, conv["extracted_fields"])
         db.save_turn(conn, conv["id"], body.message, result)

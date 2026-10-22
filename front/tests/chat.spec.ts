@@ -66,10 +66,15 @@ test("a failed start can be retried", async ({ page }) => {
 
 test("silence triggers reminders, and stops when the back says no more", async ({ page }) => {
   await page.clock.install();
-  const calls = await mockBack(page, { nudges: 3 });
+  const calls = await mockBack(page, { nudges: 3, message: () => ({ reply: "¿Tienes carné?", completed: false, status: "pending" }) });
   await page.goto("/");
   await expect(page.locator('[data-role="rita"]')).toHaveText(GREETING);
 
+  await page.clock.runFor(60_000); // no reminders before the candidate's first message
+  expect(calls.nudge).toBe(0);
+
+  await send(page, "Hola");
+  await expect(page.locator('[data-role="rita"]').last()).toHaveText("¿Tienes carné?");
   for (let i = 1; i <= 3; i++) {
     await page.clock.runFor(60_000);
     await expect(page.locator('[data-role="rita"]').last()).toHaveText(`¿Sigues ahí? (${i})`);
@@ -78,7 +83,7 @@ test("silence triggers reminders, and stops when the back says no more", async (
   await expect.poll(() => calls.nudge).toBe(4);
   await page.clock.runFor(5 * 60_000);
   expect(calls.nudge).toBe(4);
-  await expect(page.locator('[data-role="rita"]')).toHaveCount(4);
+  await expect(page.locator('[data-role="rita"]')).toHaveCount(5);
 });
 
 test("a completed interview shows the tag and a new message reopens it", async ({ page }) => {

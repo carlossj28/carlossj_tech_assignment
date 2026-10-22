@@ -60,9 +60,11 @@ export default function Chat() {
     }
   }
 
-  // Each new message restarts the silence timer; it only runs while Rita waits for the candidate.
+  // Each new message restarts the silence timer; it only runs while Rita waits for the candidate,
+  // and only after their first message (before that the conversation doesn't exist in the back).
   useEffect(() => {
-    const waiting = conversationId && !completed && !typing && messages.at(-1)?.role === "rita";
+    const spoke = messages.some((m) => m.role === "candidate");
+    const waiting = conversationId && spoke && !completed && !typing && messages.at(-1)?.role === "rita";
     if (!waiting || nudgesDone.current) return;
     const timer = setTimeout(async () => {
       try {

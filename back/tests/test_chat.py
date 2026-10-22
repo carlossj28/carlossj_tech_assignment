@@ -6,7 +6,6 @@ Run locally:  docker compose up -d
 import json
 import os
 from types import SimpleNamespace
-from uuid import uuid4
 
 import openai
 import pytest
@@ -69,11 +68,16 @@ def _turns(cid):
     return db.get_turns(cid)
 
 
-def test_start_stores_the_greeting(api):
+def test_start_stores_nothing_until_the_first_message(api, fake):
+    import db
     body = api.post("/api/chat/start").json()
     assert "Rita" in body["greeting"]
+    assert db.get_conversation(body["conversation_id"]) is None          # a visitor leaves no row
+
+    fake.script = [_completion(text="¿Tienes carné?")]
+    _say(api, body["conversation_id"], "Hola")
     assert [(t["role"], t["content"]) for t in _turns(body["conversation_id"])] == [
-        ("assistant", body["greeting"])]
+        ("assistant", body["greeting"]), ("user", "Hola"), ("assistant", "¿Tienes carné?")]
 
 
 def test_message_saves_turns_data_and_status(api, fake):
@@ -108,6 +112,8 @@ def test_second_turn_sees_text_history_and_saved_data(api, fake):
 def test_busy_conversation_returns_409(api, fake):
     import db
     cid = _start(api)
+    fake.script = [_completion(text="¿Tu nombre?")]
+    _say(api, cid, "hola")                                   # the first message creates the row
     with db.pool().connection() as holder:
         db.lock_conversation(holder, cid)                    # another turn in flight
         assert _say(api, cid, "hola").status_code == 409
@@ -120,17 +126,17 @@ def test_openai_failure_returns_502_and_saves_nothing(api, fake):
                    openai.OpenAIError("down")]
     r = _say(api, cid, "Luis")
     assert r.status_code == 502 and "detail" in r.json()
-    assert len(_turns(cid)) == 1                               # only the greeting
-    assert db.get_conversation(cid)["extracted_fields"] == {}
+    assert db.get_conversation(cid) is None                   # rolled back, the row too
 
 
-def test_unknown_or_malformed_id(api):
-    assert _say(api, str(uuid4()), "hola").status_code == 404
+def test_malformed_id(api):
     assert _say(api, "not-a-uuid", "hola").status_code == 422
 
 
 def test_three_nudges_per_silence(api, fake):
     cid = _start(api)
+    fake.script = [_completion(text="¿Tu nombre?")]
+    _say(api, cid, "hola")                                   # nudges need an existing conversation
     nudge = lambda: api.post("/api/chat/nudge", json={"conversation_id": cid}).json()["reply"]  # noqa: E731
     fake.script = [_completion(text=f"¿Sigues ahí? {i}") for i in range(3)]
     assert [nudge() for _ in range(4)] == ["¿Sigues ahí? 0", "¿Sigues ahí? 1", "¿Sigues ahí? 2", None]

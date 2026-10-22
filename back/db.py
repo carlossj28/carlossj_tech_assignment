@@ -61,6 +61,19 @@ def start_conversation(source: str, greeting: str) -> str:
     return str(cid)
 
 
+def ensure_conversation(conn: Connection, cid: UUID, greeting: str) -> None:
+    """Create the conversation on the candidate's first message, so visitors who
+    never write leave no row. Inside the turn's transaction: a failed turn leaves nothing."""
+    created = conn.execute(
+        "INSERT INTO conversations (id, source) VALUES (%s, 'chat') ON CONFLICT (id) DO NOTHING", (cid,)
+    ).rowcount
+    if created:
+        conn.execute(
+            "INSERT INTO turns (conversation_id, role, content) VALUES (%s, 'assistant', %s)",
+            (cid, greeting),
+        )
+
+
 def lock_conversation(conn: Connection, cid: UUID) -> dict[str, Any] | None:
     """The conversation row, locked until the transaction ends. None if it doesn't
     exist; Busy if another turn holds it (we fail fast instead of queueing)."""
