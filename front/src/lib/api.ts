@@ -28,7 +28,7 @@ export const voiceSession = () => post<{ conversation_id: string; client_secret:
 // The tool result goes back to the model. Any failure (back down, 409, 500) becomes `error`,
 // so Rita tells the candidate it's a technical problem instead of the call freezing.
 export const voiceTool = (conversation_id: string, name: string, args: object) =>
-  post<object>("/api/voice/tool", { conversation_id, name, args }).catch(() => ({ ok: false, error: "unavailable" }));
+  post<{ ok?: boolean }>("/api/voice/tool", { conversation_id, name, args }).catch(() => ({ ok: false, error: "unavailable" }));
 
 export const voiceTranscript = (conversation_id: string, turns: { role: "user" | "assistant"; text: string }[]) =>
   post<object>("/api/voice/transcript", { conversation_id, turns });
