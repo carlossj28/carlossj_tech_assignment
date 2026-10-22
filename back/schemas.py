@@ -31,7 +31,6 @@ class SaveAnswerArgs(BaseModel):
     preferred_schedule: list[Schedule] | None = Field(None, min_length=1)
     prior_experience: Experience | None = None
     start_date: date | None = Field(None, description="ISO yyyy-mm-dd, today or later.")
-    contact_email: str | None = Field(None, min_length=3)
 
     @field_validator("start_date")
     @classmethod
