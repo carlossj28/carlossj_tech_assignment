@@ -172,6 +172,24 @@
   pointer-events: none;
 }
 
+/* The candidate's tone (ADR-030): the pill reads --status, like the screening status. */
+.positive {
+  --status: var(--mint);
+}
+
+.neutral {
+  --status: var(--slate);
+}
+
+.frustrated {
+  --status: var(--rose);
+}
+
+.alert {
+  position: relative; /* above the quotation mark */
+  margin-bottom: 18px;
+}
+
 .quote {
   position: relative;
   margin: 0;
@@ -190,6 +208,11 @@
 
 .quote figcaption {
   margin-top: 12px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
   font-size: 13px;
   font-weight: 500;
   color: var(--ash);

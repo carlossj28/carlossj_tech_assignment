@@ -12,6 +12,7 @@ CREATE TABLE IF NOT EXISTS conversations (
     candidate_name    TEXT,                    -- mirrored from extracted_fields for cheap listing
     extracted_fields  JSONB       NOT NULL DEFAULT '{}',  -- the "shared sheet" voice rehydrates
     summary           TEXT,
+    sentiment         TEXT        CHECK (sentiment IN ('positive', 'neutral', 'frustrated')),  -- Rita, on close (ADR-030)
     nudge_count       INT         NOT NULL DEFAULT 0,     -- reminders in the current silence (ADR-026)
     created_at        TIMESTAMPTZ NOT NULL DEFAULT now(),
     last_activity_at  TIMESTAMPTZ NOT NULL DEFAULT now()  -- last candidate message; "inactive" derives from it
@@ -26,6 +27,10 @@ CREATE TABLE IF NOT EXISTS turns (
     tool_calls      JSONB,
     created_at      TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+
+-- Added after the first deploy: brings an existing table up to date (ADR-030).
+ALTER TABLE conversations ADD COLUMN IF NOT EXISTS sentiment TEXT
+    CHECK (sentiment IN ('positive', 'neutral', 'frustrated'));
 
 CREATE INDEX IF NOT EXISTS turns_conversation_idx ON turns (conversation_id, id);
 

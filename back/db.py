@@ -108,10 +108,10 @@ def save_turn(conn: Connection, cid: UUID, message: str, result: TurnResult) -> 
         """UPDATE conversations
               SET extracted_fields = %s, candidate_name = %s, screening_status = %s,
                   knockout_reason = %s, completed = %s, summary = COALESCE(%s, summary),
-                  nudge_count = 0, last_activity_at = now()
+                  sentiment = COALESCE(%s, sentiment), nudge_count = 0, last_activity_at = now()
             WHERE id = %s""",
         (json.dumps(result.extracted), result.extracted.get("full_name"), result.status,
-         result.knockout, result.completed, result.summary, cid),
+         result.knockout, result.completed, result.summary, result.sentiment, cid),
     )
 
 
@@ -126,16 +126,17 @@ def save_nudge(conn: Connection, cid: UUID, reply: str) -> None:
 # ── Voice: the browser relays each tool call and each finished sentence ─────────
 
 def save_voice_data(conn: Connection, cid: UUID, extracted: dict, status: str,
-                    knockout: str | None, *, completed: bool, summary: str | None) -> None:
+                    knockout: str | None, *, completed: bool, summary: str | None,
+                    sentiment: str | None) -> None:
     """Data + status after a voice tool call. Once Rita closes the call it stays
     closed (unlike chat, a call has no "new message" that reopens it)."""
     conn.execute(
         """UPDATE conversations
               SET extracted_fields = %s, candidate_name = %s, screening_status = %s,
                   knockout_reason = %s, completed = %s, summary = COALESCE(%s, summary),
-                  last_activity_at = now()
+                  sentiment = COALESCE(%s, sentiment), last_activity_at = now()
             WHERE id = %s""",
-        (json.dumps(extracted), extracted.get("full_name"), status, knockout, completed, summary, cid),
+        (json.dumps(extracted), extracted.get("full_name"), status, knockout, completed, summary, sentiment, cid),
     )
 
 
@@ -175,7 +176,7 @@ def list_conversations(idle_minutes: int) -> list[dict[str, Any]]:
 def get_conversation_detail(cid: UUID, idle_minutes: int) -> dict[str, Any] | None:
     with pool().connection() as conn:
         return conn.cursor(row_factory=dict_row).execute(
-            f"SELECT {_LISTING}, extracted_fields, summary FROM conversations WHERE id = %(id)s",
+            f"SELECT {_LISTING}, extracted_fields, summary, sentiment FROM conversations WHERE id = %(id)s",
             {"idle": idle_minutes, "id": cid},
         ).fetchone()
 

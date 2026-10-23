@@ -149,7 +149,7 @@ def test_three_nudges_per_silence(api, fake):
 def test_no_nudge_once_completed(api, fake):
     cid = _start(api)
     fake.script = [_completion(tools=[_tool("save_answer", {"has_driver_license": False}),
-                                      _tool("end_interview", {"summary": "Sin carné."})]),
+                                      _tool("end_interview", {"summary": "Sin carné.", "sentiment": "neutral"})]),
                    _completion(text="Gracias, sin carné no podemos seguir.")]
     assert _say(api, cid, "no tengo carné").json()["completed"] is True
     assert api.post("/api/chat/nudge", json={"conversation_id": cid}).json() == {"reply": None}
@@ -159,12 +159,13 @@ def test_message_after_close_reopens_and_requalifies(api, fake):
     import db
     cid = _start(api)
     fake.script = [_completion(tools=[_tool("save_answer", {"has_driver_license": True, "city": "Lerín"}),
-                                      _tool("end_interview", {"summary": "Fuera de zona."})]),
+                                      _tool("end_interview", {"summary": "Fuera de zona.", "sentiment": "frustrated"})]),
                    _completion(text="En Lerín no estamos; si te equivocaste, dímelo.")]
     assert _say(api, cid, "tengo carné, vivo en Lerín").json() == {
         "reply": "En Lerín no estamos; si te equivocaste, dímelo.", "completed": True,
         "status": "disqualified"}
-    assert db.get_conversation(cid)["knockout_reason"] == "out_of_service_area"
+    conv = db.get_conversation(cid)
+    assert conv["knockout_reason"] == "out_of_service_area" and conv["sentiment"] == "frustrated"
 
     fake.script = [_completion(tools=[_tool("save_answer", {"city": "Madrid"})]),
                    _completion(text="¡Genial! ¿Qué disponibilidad tienes?")]
@@ -172,3 +173,4 @@ def test_message_after_close_reopens_and_requalifies(api, fake):
         "reply": "¡Genial! ¿Qué disponibilidad tienes?", "completed": False, "status": "qualified"}
     conv = db.get_conversation(cid)
     assert conv["knockout_reason"] is None and conv["summary"] == "Fuera de zona."
+    assert conv["sentiment"] == "frustrated"                   # kept until Rita closes again

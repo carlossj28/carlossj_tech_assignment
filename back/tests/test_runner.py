@@ -50,11 +50,12 @@ def test_saves_answer_then_replies():
 def test_end_interview_completes_with_status_from_data():
     extracted = {"has_driver_license": True, "city": "Madrid"}
     client = FakeClient([
-        _completion(tools=[_tool_call("end_interview", {"summary": "apta"})]),
+        _completion(tools=[_tool_call("end_interview", {"summary": "apta", "sentiment": "positive"})]),
         _completion(text="¡Todo listo! El equipo te contactará."),
     ])
     r = run_turn([{"role": "user", "content": "confirmo"}], extracted, client=client)
     assert r.completed and r.status == "qualified" and r.summary == "apta"
+    assert r.sentiment == "positive"
 
 
 def test_iteration_cap_falls_back():

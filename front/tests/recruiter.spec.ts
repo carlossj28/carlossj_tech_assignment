@@ -14,6 +14,7 @@ const DETAIL = {
   extracted_fields: { full_name: "Marta Gil", has_driver_license: true, city: "Madrid", availability: ["full_time"],
     prior_experience: { years: 2, platforms: ["Glovo"] } },
   summary: "Repartidora con 2 años en Glovo; Madrid; jornada completa.",
+  sentiment: "positive",
   turns: [
     { role: "assistant", content: "¿Tienes carné?", created_at: "2026-10-21T10:00:00Z" },
     { role: "user", content: "Sí, desde 2019", created_at: "2026-10-21T10:01:00Z" },
@@ -34,6 +35,10 @@ async function mockBack(page: Page, { loggedIn = true } = {}) {
   });
   await page.route("**/api/recruiter/conversations", (r) => r.fulfill(guard(ROWS)));
   await page.route("**/api/recruiter/conversations/a", (r) => r.fulfill(guard(DETAIL)));
+  await page.route("**/api/recruiter/conversations/b", (r) =>
+    r.fulfill(guard({ ...DETAIL, ...ROWS[1], sentiment: "frustrated" })));
+  await page.route("**/api/recruiter/conversations/c", (r) =>
+    r.fulfill(guard({ ...DETAIL, ...ROWS[2], summary: null, sentiment: null })));
 }
 
 const rows = (page: Page) => page.locator("ul li");
@@ -75,8 +80,22 @@ test("the detail shows fields, summary and transcript", async ({ page }) => {
   await expect(page.getByText("Jornada completa", { exact: true })).toBeVisible();
   await expect(page.getByText("2 años · Glovo", { exact: true })).toBeVisible();
   await expect(page.getByText(DETAIL.summary)).toBeVisible();
+  await expect(page.getByText("Tono: Animado")).toBeVisible();
+  await expect(page.getByText(/se mostró frustrado/)).toHaveCount(0);
   await expect(page.locator('[data-role="rita"]')).toHaveText("¿Tienes carné?");
   await expect(page.locator('[data-role="candidate"]')).toHaveText("Sí, desde 2019");
+});
+
+test("a frustrated candidate raises an alert; an open one shows no tone", async ({ page }) => {
+  await mockBack(page);
+  await page.goto("/recruiter/b");
+  await expect(page.getByText("Tono: Frustrado")).toBeVisible();
+  await expect(page.getByText(/se mostró frustrado/)).toBeVisible();
+
+  await page.goto("/recruiter/c");
+  await expect(page.getByText("Todavía sin resumen.")).toBeVisible();
+  await expect(page.getByText(/Tono:/)).toHaveCount(0);
+  await expect(page.getByText(/se mostró frustrado/)).toHaveCount(0);
 });
 
 test("without a session the panel sends you to the login", async ({ page }) => {
