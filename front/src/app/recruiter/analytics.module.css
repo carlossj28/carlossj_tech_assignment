@@ -1,0 +1,279 @@
+/* Analytics section of the recruiter panel. Status colours come from recruiter.module.css
+   (.qualified/.pending/.disqualified set --status) and always travel with a label. */
+.analytics {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 12px;
+}
+
+.analytics > :first-child {
+  margin-bottom: 4px;
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 18px 20px 20px;
+  border-radius: 24px;
+  background: var(--glass);
+  border: 1px solid var(--hairline);
+  box-shadow: var(--glass-shadow);
+}
+
+.card h2 {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--bone);
+}
+
+.head {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px 16px;
+}
+
+.legend {
+  display: flex;
+  gap: 14px;
+  margin: 0;
+  font-size: 12.5px;
+  color: var(--ash);
+}
+
+.legend span {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.swatch {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+  background: var(--status);
+}
+
+.none {
+  margin: 0;
+  font-size: 13.5px;
+  color: var(--slate);
+}
+
+/* Horizontal bar: label + value on one line, the track under them. */
+.bar {
+  --tone: var(--violet);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 6px 12px;
+  font-size: 13.5px;
+}
+
+.bar[data-tone="sky"] { --tone: var(--sky); }
+.bar[data-tone="mint"] { --tone: var(--mint); }
+.bar[data-tone="rose"] { --tone: var(--rose); }
+.bar[data-tone="coral"] { --tone: var(--coral); }
+
+.label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--ash);
+}
+
+.value {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--white);
+}
+
+.value small {
+  margin-left: 8px;
+  font-weight: 400;
+  color: var(--slate);
+}
+
+.track {
+  grid-column: 1 / -1;
+  height: 6px;
+  border-radius: 3px;
+  background: var(--fill-1);
+  overflow: hidden;
+}
+
+.track span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--tone);
+  transition: width 0.8s var(--ease-out);
+}
+
+.figure {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 4px 6px;
+  margin: 4px 0 0;
+  padding-top: 14px;
+  border-top: 1px solid var(--hairline);
+  color: var(--slate);
+  font-size: 13px;
+}
+
+.figure strong {
+  font-size: 32px;
+  font-weight: 600;
+  letter-spacing: -0.04em;
+  font-variant-numeric: tabular-nums;
+  color: var(--white);
+}
+
+.figure small {
+  font-size: 14px;
+  color: var(--ash);
+}
+
+/* Daily chart: one column per day, the stack grows from the baseline. */
+.chart {
+  position: relative;
+  padding-top: 18px;
+}
+
+.max {
+  position: absolute;
+  top: 0;
+  left: 0;
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  color: var(--slate);
+}
+
+.columns {
+  display: grid;
+  grid-template-columns: repeat(14, minmax(0, 1fr));
+  gap: 4px;
+  height: 180px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  /* Recessive guides: the top of the scale and the baseline. */
+  background:
+    linear-gradient(var(--hairline), var(--hairline)) top / 100% 1px no-repeat,
+    linear-gradient(var(--hairline-strong), var(--hairline-strong)) 0 calc(100% - 22px) / 100% 1px no-repeat;
+}
+
+.day {
+  position: relative;
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) 22px;
+  align-items: end;
+  justify-items: center;
+  border-radius: 6px;
+  outline-offset: 0;
+  cursor: default;
+}
+
+.stack {
+  display: flex;
+  flex-direction: column-reverse;
+  gap: 2px;
+  width: min(100%, 28px);
+  border-radius: 4px 4px 0 0;
+  overflow: hidden;
+  transition: height 0.8s var(--ease-out);
+}
+
+.stack span {
+  min-height: 2px;
+  background: var(--status);
+}
+
+.tick {
+  align-self: center;
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  color: var(--slate);
+}
+
+.day:hover .tick,
+.day:focus-visible .tick {
+  color: var(--bone);
+}
+
+/* Tooltip: shown on hover or keyboard focus; edge columns anchor it inwards. */
+.tip {
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 50%;
+  z-index: 2;
+  display: none;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 150px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: var(--graphite);
+  border: 1px solid var(--hairline-strong);
+  box-shadow: var(--glass-shadow);
+  font-size: 12.5px;
+  color: var(--ash);
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+
+.day[data-edge="start"] .tip {
+  left: 0;
+  transform: none;
+}
+
+.day[data-edge="end"] .tip {
+  left: auto;
+  right: 0;
+  transform: none;
+}
+
+.day:hover .tip,
+.day:focus-visible .tip {
+  display: flex;
+}
+
+.tip b {
+  display: block;
+  font-weight: 600;
+  color: var(--bone);
+}
+
+.tip b::first-letter {
+  text-transform: uppercase;
+}
+
+.tip span {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.tip em {
+  margin-left: auto;
+  padding-left: 12px;
+  font-style: normal;
+  font-variant-numeric: tabular-nums;
+  color: var(--white);
+}
+
+@media (min-width: 900px) {
+  .analytics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .analytics > :first-child,
+  .wide {
+    grid-column: 1 / -1;
+  }
+}

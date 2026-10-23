@@ -10,6 +10,7 @@ import Orb from "@/components/Orb";
 import StatusPill from "@/components/StatusPill";
 import { KNOCKOUT, STATUS, formatDate, formatRelative } from "@/lib/labels";
 import { type ConversationRow, listConversations, logout } from "@/lib/recruiter";
+import Analytics from "./Analytics";
 import styles from "./recruiter.module.css";
 
 const FILTERS: (Status | "all")[] = ["all", "qualified", "pending", "disqualified"];
@@ -63,6 +64,7 @@ export default function ConversationsPage() {
       </section>
 
       <Stats rows={rows} error={error} />
+      {rows && rows.length > 0 && <Analytics rows={rows} />}
 
       <nav className={styles.tabs} aria-label="Filtrar por estado">
         {FILTERS.map((f) => (
