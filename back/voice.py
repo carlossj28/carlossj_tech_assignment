@@ -31,7 +31,8 @@ _VOICE_RULES = ("\n# Voz\nEstás en una llamada: frases habladas y cortas, sin e
                 "frase y nunca repitas la misma dos veces seguidas.\n"
                 # The browser hangs up after the goodbye that follows end_interview, so
                 # corrections must come before it (ADR-029).
-                "Antes de llamar a end_interview (también tras un knockout), pregunta siempre "
+                "Antes de llamar a end_interview (también tras un knockout, y después de agendar si es "
+                "qualified), pregunta siempre "
                 "«¿Puedo ayudarte en algo más?». Si pide un cambio, guárdalo y vuelve a preguntarlo. "
                 "Llama a end_interview solo cuando diga que no; después despídete en una frase: "
                 "la llamada se cuelga sola.")

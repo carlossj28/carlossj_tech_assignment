@@ -5,6 +5,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import * as api from "@/lib/api";
 import { FIELDS } from "@/lib/labels";
 import Aurora from "./Aurora";
+import Booking from "./Booking";
 import Brand from "./Brand";
 import Composer from "./Composer";
 import MessageList, { type Message } from "./MessageList";
@@ -19,6 +20,8 @@ export default function Chat() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [typing, setTyping] = useState(false);
   const [completed, setCompleted] = useState(false);
+  const [qualified, setQualified] = useState(false);
+  const [interviewAt, setInterviewAt] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const nudgesDone = useRef(false); // back answered null: no more reminders
   const started = useRef(false); // dev StrictMode runs effects twice; open only one conversation
@@ -51,6 +54,8 @@ export default function Chat() {
       const res = await api.sendMessage(conversationId, text);
       say("rita", res.reply);
       setCompleted(res.completed);
+      setQualified(res.status === "qualified");
+      setInterviewAt(res.interview_at);
       return true;
     } catch {
       setMessages((m) => m.slice(0, -1)); // drop the unsent bubble; Composer keeps the text
@@ -150,6 +155,8 @@ export default function Chat() {
               </span>
             </p>
           )}
+          {/* The booking shows as soon as it exists; the Calendly fallback only once Rita closed. */}
+          {qualified && (interviewAt || completed) && conversationId && <Booking interviewAt={interviewAt} uid={conversationId} />}
           {/* Stays enabled after completion: a new message reopens the conversation (ADR-028). */}
           <Composer disabled={!conversationId || typing} onSend={send} />
           <p className={styles.disclaimer}>

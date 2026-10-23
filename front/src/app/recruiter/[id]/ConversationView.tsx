@@ -111,6 +111,11 @@ export default function ConversationView() {
                       <dd>{formatField(key, conv.extracted_fields[key])}</dd>
                     </div>
                   ))}
+                  {/* Booked by Rita; its own column, not a candidate answer (ADR-032). */}
+                  <div className={conv.interview_at ? undefined : styles.missing}>
+                    <dt>Entrevista</dt>
+                    <dd>{conv.interview_at ? formatDate(conv.interview_at) : "Sin reservar"}</dd>
+                  </div>
                 </dl>
               </section>
             </div>

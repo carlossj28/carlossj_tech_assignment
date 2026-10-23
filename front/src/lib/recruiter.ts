@@ -20,6 +20,7 @@ export type ConversationDetail = ConversationRow & {
   extracted_fields: Record<string, unknown>;
   summary: string | null;
   sentiment: "positive" | "neutral" | "frustrated" | null;
+  interview_at: string | null;
   turns: { role: "user" | "assistant"; content: string; created_at: string }[];
 };
 

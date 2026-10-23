@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import * as api from "@/lib/api";
 import Aurora from "./Aurora";
+import Booking from "./Booking";
 import Brand from "./Brand";
 import MessageList, { type Message } from "./MessageList";
 import PhoneIcon from "./PhoneIcon";
@@ -45,6 +46,8 @@ export default function Voice() {
   const [error, setError] = useState<string | null>(null);
   const [mood, setMood] = useState<Mood>("idle");
   const [showAll, setShowAll] = useState(false); // full transcript instead of subtitles
+  const [qualified, setQualified] = useState(false); // from each tool result's status
+  const [interviewAt, setInterviewAt] = useState<string | null>(null);
   const audio = useRef<AudioContext | null>(null);
   const meters = useRef<Partial<Record<Mood, () => number>>>({}); // candidate's mic while listening, Rita while speaking
   const pc = useRef<RTCPeerConnection | null>(null);
@@ -112,6 +115,8 @@ export default function Voice() {
         else if (ev.type === "response.function_call_arguments.done")
           relay(async () => {
             const out = await api.voiceTool(cid.current, ev.name, JSON.parse(ev.arguments || "{}"));
+            if (out.status) setQualified(out.status === "qualified");
+            if (ev.name === "book_interview" && out.interview_at) setInterviewAt(out.interview_at);
             if (ev.name === "end_interview" && out.ok) {
               ending.current = "closing";
               fallback.current = setTimeout(finish, 15000); // in case the audio-stopped event never comes
@@ -223,6 +228,7 @@ export default function Voice() {
               {live ? "Colgar" : state === "ended" ? "Llamar de nuevo" : "Llamar"}
             </button>
           )}
+          {qualified && (interviewAt || state === "done") && <Booking interviewAt={interviewAt} uid={cid.current} />}
           {messages.length > 0 && (
             <button className={voice.toggle} onClick={() => setShowAll((v) => !v)}>
               {showAll ? "Volver a Rita" : "Ver conversación completa"}

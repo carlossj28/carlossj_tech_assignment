@@ -650,6 +650,26 @@
   color: var(--slate);
 }
 
+/* Booked interview / Calendly fallback, under the "done" note. */
+.booking {
+  flex: none;
+  margin: 8px 16px 0;
+  text-align: center;
+  font-size: 14px;
+  color: var(--slate);
+}
+
+.booking strong {
+  color: var(--white);
+  font-weight: 600;
+}
+
+.booking a {
+  color: inherit;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
 @keyframes halo {
   to {
     opacity: 1;

@@ -31,6 +31,9 @@ CREATE TABLE IF NOT EXISTS turns (
 -- Added after the first deploy: brings an existing table up to date (ADR-030).
 ALTER TABLE conversations ADD COLUMN IF NOT EXISTS sentiment TEXT
     CHECK (sentiment IN ('positive', 'neutral', 'frustrated'));
+-- The booked interview, its own column so a third party (Calendly, an ATS) can read it (ADR-032).
+-- Wall-clock time, no zone: the same hours count for Spain and Mexico.
+ALTER TABLE conversations ADD COLUMN IF NOT EXISTS interview_at TIMESTAMP;
 
 CREATE INDEX IF NOT EXISTS turns_conversation_idx ON turns (conversation_id, id);
 
