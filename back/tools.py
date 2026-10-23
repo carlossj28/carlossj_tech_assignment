@@ -1,4 +1,4 @@
-"""The two agent tools: OpenAI schemas + pure handlers.
+"""The agent tools: OpenAI schemas + pure handlers.
 
 Design: handlers take a plain `extracted` dict (the conversation's field store)
 and the raw LLM args. They validate, mutate the dict, and return a small result
@@ -14,11 +14,14 @@ same handlers run for both transports (see propuesta-tecnica §03).
 """
 from __future__ import annotations
 
+import json
+from datetime import datetime, time, timedelta
+from pathlib import Path
 from typing import Any, Callable
 
 from pydantic import BaseModel, ValidationError
 
-from schemas import EndInterviewArgs, SaveAnswerArgs
+from schemas import BookInterviewArgs, EndInterviewArgs, FindSlotsArgs, SaveAnswerArgs
 from service_areas import cities, match_city
 
 Result = dict[str, Any]
@@ -37,9 +40,17 @@ OPENAI_TOOL_SCHEMAS: list[dict[str, Any]] = [
             "is fine. The result carries the screening status; on validation_error, re-ask.",
             SaveAnswerArgs),
     _schema("end_interview",
-            "Close the interview with a 2-3 sentence summary for the recruiter. Call once, "
+            "Close the interview with a 2-3 sentence summary and the candidate's tone for the "
+            "recruiter. Call once, "
             "after the confirmation or after saying goodbye on a knock-out.",
             EndInterviewArgs),
+    _schema("find_slots",
+            "Qualified candidates only: the 3 nearest open interview slots matching the "
+            "candidate's preference (a day, a start date, morning/afternoon/evening).",
+            FindSlotsArgs),
+    _schema("book_interview",
+            "Book the slot the candidate chose, exactly as find_slots returned it.",
+            BookInterviewArgs),
 ]
 
 # ── Status: always computed from the data (ADR-017) ─────────────────────────────
@@ -80,9 +91,50 @@ def end_interview(extracted: dict, args: dict) -> Result:
     return {"ok": True, "status": screening_status(extracted)[0]}
 
 
+# ── Interview booking (ADR-032): fixed weekly pattern, no time zones, no locking ─
+
+_SLOTS = Path(__file__).resolve().parent / "data" / "slots.json"
+_PARTS = {"morning": (0, 14), "afternoon": (14, 20), "evening": (20, 24)}
+INTERVIEW_KEY = "_interview_at"  # the turn's working copy only; persisted as its own column
+
+
+def open_slots(now: datetime | None = None) -> list[datetime]:
+    """Every slot of the weekly pattern from now to `days_ahead`, in order. Wall-clock
+    times with no zone: the same hours count for Spain and Mexico (simplification)."""
+    cfg = json.loads(_SLOTS.read_text("utf-8"))
+    now = now or datetime.now()
+    days = (now.date() + timedelta(days=d) for d in range(cfg["days_ahead"] + 1))
+    return [s for day in days if day.weekday() in cfg["weekdays"]
+            for s in (datetime.combine(day, time.fromisoformat(t)) for t in cfg["times"]) if s > now]
+
+
+def find_slots(extracted: dict, args: dict) -> Result:
+    if screening_status(extracted)[0] != "qualified":
+        return {"ok": False, "validation_error": "only a qualified candidate can book an interview"}
+    a = FindSlotsArgs.model_validate(args)
+    lo, hi = _PARTS[a.part] if a.part else (0, 24)
+    slots = [s for s in open_slots()
+             if (a.day is None or s.date() == a.day)
+             and (a.from_date is None or s.date() >= a.from_date)
+             and lo <= s.hour < hi]
+    return {"ok": True, "slots": [s.isoformat(timespec="minutes") for s in slots[:3]]}
+
+
+def book_interview(extracted: dict, args: dict) -> Result:
+    if screening_status(extracted)[0] != "qualified":
+        return {"ok": False, "validation_error": "only a qualified candidate can book an interview"}
+    slot = BookInterviewArgs.model_validate(args).slot.replace(tzinfo=None, second=0, microsecond=0)
+    if slot not in open_slots():
+        return {"ok": False, "validation_error": "not an open slot: call find_slots and offer one of those"}
+    extracted[INTERVIEW_KEY] = slot.isoformat(timespec="minutes")
+    return {"ok": True, "interview_at": extracted[INTERVIEW_KEY]}
+
+
 HANDLERS: dict[str, Callable[[dict, dict], Result]] = {
     "save_answer": save_answer,
     "end_interview": end_interview,
+    "find_slots": find_slots,
+    "book_interview": book_interview,
 }
 
 

@@ -15,6 +15,8 @@ from psycopg import Connection, errors
 from psycopg.rows import dict_row
 from psycopg_pool import ConnectionPool
 
+from tools import INTERVIEW_KEY
+
 if TYPE_CHECKING:
     from runner import TurnResult
 
@@ -78,11 +80,14 @@ def lock_conversation(conn: Connection, cid: UUID) -> dict[str, Any] | None:
     """The conversation row, locked until the transaction ends. None if it doesn't
     exist; Busy if another turn holds it (we fail fast instead of queueing)."""
     try:
-        return conn.cursor(row_factory=dict_row).execute(
+        conv = conn.cursor(row_factory=dict_row).execute(
             "SELECT * FROM conversations WHERE id = %s FOR UPDATE NOWAIT", (cid,)
         ).fetchone()
     except errors.LockNotAvailable as e:
         raise Busy from e
+    if conv and conv["interview_at"]:  # back into the working copy, so Rita knows it's booked
+        conv["extracted_fields"][INTERVIEW_KEY] = conv["interview_at"].isoformat(timespec="minutes")
+    return conv
 
 
 def get_history(conn: Connection, cid: UUID) -> list[dict[str, str]]:
@@ -90,6 +95,13 @@ def get_history(conn: Connection, cid: UUID) -> list[dict[str, str]]:
     return conn.cursor(row_factory=dict_row).execute(
         "SELECT role, content FROM turns WHERE conversation_id = %s ORDER BY id", (cid,)
     ).fetchall()
+
+
+def _split_interview(extracted: dict) -> tuple[dict, str | None]:
+    """The turn's working copy carries the booking under a private key (so the model sees
+    it in «Datos ya guardados»); on save it goes to its own column, out of the candidate's data."""
+    data = {k: v for k, v in extracted.items() if k != INTERVIEW_KEY}
+    return data, extracted.get(INTERVIEW_KEY)
 
 
 def save_turn(conn: Connection, cid: UUID, message: str, result: TurnResult) -> None:
@@ -104,14 +116,16 @@ def save_turn(conn: Connection, cid: UUID, message: str, result: TurnResult) -> 
         "VALUES (%s, 'assistant', %s, %s)",
         (cid, result.reply, json.dumps(result.tool_calls) if result.tool_calls else None),
     )
+    data, interview_at = _split_interview(result.extracted)
     conn.execute(
         """UPDATE conversations
               SET extracted_fields = %s, candidate_name = %s, screening_status = %s,
                   knockout_reason = %s, completed = %s, summary = COALESCE(%s, summary),
+                  sentiment = COALESCE(%s, sentiment), interview_at = COALESCE(%s, interview_at),
                   nudge_count = 0, last_activity_at = now()
             WHERE id = %s""",
-        (json.dumps(result.extracted), result.extracted.get("full_name"), result.status,
-         result.knockout, result.completed, result.summary, cid),
+        (json.dumps(data), data.get("full_name"), result.status, result.knockout,
+         result.completed, result.summary, result.sentiment, interview_at, cid),
     )
 
 
@@ -126,16 +140,20 @@ def save_nudge(conn: Connection, cid: UUID, reply: str) -> None:
 # ── Voice: the browser relays each tool call and each finished sentence ─────────
 
 def save_voice_data(conn: Connection, cid: UUID, extracted: dict, status: str,
-                    knockout: str | None, *, completed: bool, summary: str | None) -> None:
+                    knockout: str | None, *, completed: bool, summary: str | None,
+                    sentiment: str | None) -> None:
     """Data + status after a voice tool call. Once Rita closes the call it stays
     closed (unlike chat, a call has no "new message" that reopens it)."""
+    data, interview_at = _split_interview(extracted)
     conn.execute(
         """UPDATE conversations
               SET extracted_fields = %s, candidate_name = %s, screening_status = %s,
                   knockout_reason = %s, completed = %s, summary = COALESCE(%s, summary),
+                  sentiment = COALESCE(%s, sentiment), interview_at = COALESCE(%s, interview_at),
                   last_activity_at = now()
             WHERE id = %s""",
-        (json.dumps(extracted), extracted.get("full_name"), status, knockout, completed, summary, cid),
+        (json.dumps(data), data.get("full_name"), status, knockout, completed, summary, sentiment,
+         interview_at, cid),
     )
 
 
@@ -159,7 +177,8 @@ def get_conversation(cid: str) -> dict[str, Any] | None:
 # ── Recruiter panel ───────────────────────────────────────────────────────────
 
 # "inactive" is derived, never stored (ADR-018): open and quiet for idle minutes.
-_LISTING = """id, candidate_name, source, screening_status, knockout_reason, completed,
+_LISTING = """id, candidate_name, extracted_fields->>'city' AS city, source, screening_status,
+    knockout_reason, completed,
     NOT completed AND last_activity_at < now() - make_interval(mins => %(idle)s) AS inactive,
     created_at, last_activity_at"""
 
@@ -175,7 +194,7 @@ def list_conversations(idle_minutes: int) -> list[dict[str, Any]]:
 def get_conversation_detail(cid: UUID, idle_minutes: int) -> dict[str, Any] | None:
     with pool().connection() as conn:
         return conn.cursor(row_factory=dict_row).execute(
-            f"SELECT {_LISTING}, extracted_fields, summary FROM conversations WHERE id = %(id)s",
+            f"SELECT {_LISTING}, extracted_fields, summary, sentiment, interview_at FROM conversations WHERE id = %(id)s",
             {"idle": idle_minutes, "id": cid},
         ).fetchone()
 

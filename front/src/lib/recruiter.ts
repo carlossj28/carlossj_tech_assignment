@@ -6,6 +6,7 @@ import type { Status } from "./api";
 export type ConversationRow = {
   id: string;
   candidate_name: string | null;
+  city: string | null;
   source: "chat" | "voice";
   screening_status: Status;
   knockout_reason: "no_license" | "out_of_service_area" | null;
@@ -18,6 +19,8 @@ export type ConversationRow = {
 export type ConversationDetail = ConversationRow & {
   extracted_fields: Record<string, unknown>;
   summary: string | null;
+  sentiment: "positive" | "neutral" | "frustrated" | null;
+  interview_at: string | null;
   turns: { role: "user" | "assistant"; content: string; created_at: string }[];
 };
 

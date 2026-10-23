@@ -31,7 +31,8 @@ _VOICE_RULES = ("\n# Voz\nEstás en una llamada: frases habladas y cortas, sin e
                 "frase y nunca repitas la misma dos veces seguidas.\n"
                 # The browser hangs up after the goodbye that follows end_interview, so
                 # corrections must come before it (ADR-029).
-                "Antes de llamar a end_interview (también tras un knockout), pregunta siempre "
+                "Antes de llamar a end_interview (también tras un knockout, y después de agendar si es "
+                "qualified), pregunta siempre "
                 "«¿Puedo ayudarte en algo más?». Si pide un cambio, guárdalo y vuelve a preguntarlo. "
                 "Llama a end_interview solo cuando diga que no; después despídete en una frase: "
                 "la llamada se cuelga sola.")
@@ -82,7 +83,8 @@ def tool(body: ToolBody) -> dict:
         ends = body.name == "end_interview" and out.get("ok")
         db.save_voice_data(conn, body.conversation_id, extracted, *screening_status(extracted),
                            completed=conv["completed"] or bool(ends),
-                           summary=body.args["summary"] if ends else None)
+                           summary=body.args["summary"] if ends else None,
+                           sentiment=body.args["sentiment"] if ends else None)
     return out
 
 

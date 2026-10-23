@@ -6,13 +6,14 @@ model sees and the validation Python runs can never drift apart.
 """
 from __future__ import annotations
 
-from datetime import date
+from datetime import date, datetime
 from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 Availability = Literal["full_time", "part_time", "weekends"]
 Schedule = Literal["morning", "afternoon", "evening", "flexible"]
+Sentiment = Literal["positive", "neutral", "frustrated"]
 
 
 class Experience(BaseModel):
@@ -43,3 +44,18 @@ class SaveAnswerArgs(BaseModel):
 class EndInterviewArgs(BaseModel):
     model_config = ConfigDict(extra="forbid")
     summary: str = Field(min_length=1, description="2-3 sentences for the recruiter.")
+    sentiment: Sentiment = Field(description="The candidate's tone in the conversation, not the outcome.")
+
+
+class FindSlotsArgs(BaseModel):
+    """The candidate's preference as filters; all optional ("cuando sea" = none)."""
+    model_config = ConfigDict(extra="forbid")
+    day: date | None = Field(None, description="A specific day the candidate asked for, ISO yyyy-mm-dd.")
+    from_date: date | None = Field(None, description="Earliest day, if they said 'from Monday on', ISO.")
+    part: Literal["morning", "afternoon", "evening"] | None = Field(
+        None, description="morning < 14:00, afternoon 14:00-20:00, evening >= 20:00.")
+
+
+class BookInterviewArgs(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    slot: datetime = Field(description="One of the slots find_slots returned, exactly as given.")

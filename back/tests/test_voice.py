@@ -23,7 +23,7 @@ def test_session_mints_key_with_same_brain_and_stores_nothing(monkeypatch):
     body = TestClient(main.app).post("/api/voice/session").json()
 
     assert body["client_secret"] == "ek_test" and len(body["conversation_id"]) == 36
-    assert {t["name"] for t in sent["tools"]} == {"save_answer", "end_interview"}
+    assert {t["name"] for t in sent["tools"]} == {"save_answer", "end_interview", "find_slots", "book_interview"}
     assert all("function" not in t and t["type"] == "function" for t in sent["tools"])  # Realtime shape
     assert "Eres Rita" in sent["instructions"] and "llamada" in sent["instructions"]
     assert "¿Puedo ayudarte en algo más?" in sent["instructions"]  # asked before hanging up (ADR-029)
@@ -78,8 +78,10 @@ def test_tool_runs_same_brain_and_closes(api, monkeypatch):
     assert tool("save_answer", {"full_name": "Marta", "has_driver_license": True, "city": "Madrid"}) == {
         "ok": True, "status": "qualified"}
     assert tool("save_answer", {"start_date": "2000-01-01"})["ok"] is False   # validation_error → model re-asks
-    assert tool("end_interview", {"summary": "Apta, Madrid."})["ok"] is True
+    assert tool("end_interview", {"summary": "Apta, Madrid."})["ok"] is False  # tone missing → re-ask
+    assert tool("end_interview", {"summary": "Apta, Madrid.", "sentiment": "positive"})["ok"] is True
 
     conv = db.get_conversation(cid)
     assert conv["screening_status"] == "qualified" and conv["completed"] is True
     assert conv["summary"] == "Apta, Madrid." and conv["candidate_name"] == "Marta"
+    assert conv["sentiment"] == "positive"

@@ -53,10 +53,21 @@ def test_list_newest_first_with_inactive_derived(api):
     assert ids.index(fresh) < ids.index(quiet)          # by last activity, newest first
 
 
+def test_list_carries_the_city_for_the_analytics(api):
+    import db
+    cid, blank = _conversation(0), _conversation(0)
+    with db.pool().connection() as conn:
+        conn.execute("""UPDATE conversations SET extracted_fields = '{"city": "Madrid"}' WHERE id = %s""", (cid,))
+    rows = {r["id"]: r for r in api.get("/api/recruiter/conversations").json()}
+    assert rows[cid]["city"] == "Madrid"
+    assert rows[blank]["city"] is None                  # no city yet
+
+
 def test_detail_has_data_and_text_turns(api):
     cid = _conversation(0)
     body = api.get(f"/api/recruiter/conversations/{cid}").json()
     assert body["extracted_fields"] == {} and body["summary"] is None
+    assert body["sentiment"] is None
     assert [(t["role"], t["content"]) for t in body["turns"]] == [("assistant", "¡Hola!")]
     assert "tool_calls" not in body["turns"][0]
 
