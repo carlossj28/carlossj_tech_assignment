@@ -166,13 +166,16 @@ export default function Voice() {
       <Aurora />
       <header className={styles.bar}>
         <Brand area="Repartidores" />
-        {/* Back to the text chat; on a phone it shrinks to an icon, like the chat's recruiter link. */}
-        <Link className={styles.staff} href="/" aria-label="Prefiero escribir">
-          <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden>
-            <path d="M4.5 11.5a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h7a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2H7.5l-3 2.5Z" />
-          </svg>
-          <span className={styles.staffText}>Prefiero escribir</span>
-        </Link>
+        {/* Back to the text chat; on a phone it shrinks to an icon, like the chat's recruiter link.
+            Hidden once the interview is done: the chat would start a second one for the same candidate. */}
+        {state !== "done" && (
+          <Link className={styles.staff} href="/" aria-label="Prefiero escribir">
+            <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden>
+              <path d="M4.5 11.5a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h7a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2H7.5l-3 2.5Z" />
+            </svg>
+            <span className={styles.staffText}>Prefiero escribir</span>
+          </Link>
+        )}
       </header>
 
       <div className={styles.layout}>
