@@ -15,7 +15,7 @@ cases.json ──► harness.run_case ──► runner.run_turn (gpt-5.4-mini re
 
 ```sh
 cd back
-OPENAI_API_KEY=... uv run python -m evals                 # los 16 casos, una vez
+OPENAI_API_KEY=... uv run python -m evals                 # los 21 casos, una vez
 OPENAI_API_KEY=... uv run python -m evals --repeat 3      # tasa de acierto por caso
 OPENAI_API_KEY=... uv run python -m evals --only sin_carne cambio_idioma
 OPENAI_API_KEY=... uv run python -m evals --out informe.json   # transcripciones completas
@@ -35,6 +35,8 @@ El evaluador sí tiene tests offline (`tests/test_evals.py`, cliente falso).
 | `status` / `knockout` | Estado calculado por Python (`qualified` / `disqualified` / `pending`) y motivo |
 | `completed` | Rita llamó a `end_interview` en este turno |
 | `reply_lang` | Idioma de la respuesta de Rita (`es` / `en`, misma heurística que `language.py`) |
+| `booked` | Hay (o no) una entrevista reservada |
+| `slot_part` | La entrevista reservada cae en `morning` / `afternoon` / `evening` (mismos tramos que `find_slots`) |
 
 No se comparan frases. Por eso cambiar el tono, añadir FAQ o el sentimiento del
 cierre no rompe las evals, salvo que rompa la entrevista en sí.
@@ -45,8 +47,8 @@ cierre no rompe las evals, salvo que rompa la entrevista en sí.
 
 | Caso | Qué simula | Qué comprueba |
 |---|---|---|
-| `feliz_paso_a_paso` | Un dato por mensaje y confirma | Los 7 campos con su tipo correcto, apto, cierra al confirmar |
-| `todo_en_un_mensaje` | Lo cuenta todo en una frase larga | Extrae los 7 campos de golpe (incluidas 2 plataformas) y cierra al confirmar |
+| `feliz_paso_a_paso` | Un dato por mensaje, confirma y agenda por la mañana | Los 7 campos con su tipo correcto, apto, no reserva hasta que elige, reserva de mañana |
+| `todo_en_un_mensaje` | Lo cuenta todo en una frase larga y le da igual el día | Extrae los 7 campos de golpe (incluidas 2 plataformas) y reserva |
 | `sin_carne` | No tiene carné | `has_driver_license=false`, descartado `no_license`, cierra en ese turno |
 | `ciudad_sin_cobertura` | Vive en Zaragoza | Descartado `out_of_service_area` y cierra |
 | `alias_ciudad` | Dice "CDMX" y "licencia de manejo" (México) | Guarda "Ciudad de México" y entiende el carné en español de México |
@@ -67,6 +69,20 @@ cierre no rompe las evals, salvo que rompa la entrevista en sí.
 | `edge_otro_idioma` | Escribe en francés | Rita responde en español (solo hay ES/EN) | Si contesta en francés, la sustitución de idioma por turno no está mandando |
 | `edge_fuera_de_tema_x3` | Insiste tres veces en una pregunta fuera de tema | No cierra en las dos primeras; cierra a la tercera, sin descartar | Contar las insistencias en código en vez de confiar en el modelo |
 
+### Agenda: reservar la entrevista (ADR-032)
+
+Los candidatos dicen preferencias relativas ("por la tarde", "cuando sea"), nunca una
+fecha concreta: los huecos salen de un patrón semanal a partir de hoy, así que una
+fecha fija dejaría el caso caducado en dos semanas.
+
+| Caso | Qué simula | Qué comprueba | Si falla, qué haríamos |
+|---|---|---|---|
+| `agenda_entrevista` | Apta, "por la mañana", elige el primero | Reserva | Revisar que el prompt pida agendar tras la confirmación |
+| `agenda_criterio_tarde` | Solo puede por la tarde | La reserva es de tarde: el modelo pasa el filtro y Python lo aplica | Si reserva de mañana, el modelo no está pasando `part` a `find_slots` |
+| `agenda_sin_huecos_noche` | Solo de noche (no hay huecos de noche) | No reserva y aun así cierra (en pantalla sale Calendly) | Si inventa un hueco, `book_interview` lo rechaza; si no cierra, reforzar "tras dos intentos, sigue" |
+| `agenda_descartado_no_agenda` | Sin carné y pide entrevista | No reserva | Ya lo bloquea Python (solo `qualified`); si fallara, es un bug de `tools.py` |
+| `agenda_no_reserva_dos_veces` | Reserva y pide otra "por si acaso" | Sigue con una sola reserva | La línea «Datos ya guardados» debería avisarle; si no, bloquearlo en `book_interview` |
+
 ### Límites conocidos (no cubiertos a propósito)
 
 - **El guion no se adapta.** Si Rita pregunta algo inesperado, el siguiente mensaje
@@ -76,7 +92,8 @@ cierre no rompe las evals, salvo que rompa la entrevista en sí.
 - **Voz no se evalúa aquí.** Usa las mismas herramientas y validaciones, pero otro
   transporte (Realtime); su prompt se probaría aparte.
 - **No se juzga el tono ni el resumen.** Haría falta otro LLM como juez; se deja
-  fuera para que las evals sean deterministas en lo que comprueban.
-- **FAQ y sentimiento** (ADR-030, ADR-031) no tienen casos todavía. Cuando estén en
+  fuera para que las evals sean deterministas en lo que comprueban. Tampoco se
+  comprueba que Rita *diga* bien la hora de la entrevista, solo cuál reservó.
+- **FAQ y sentimiento** (ADR-030) no tienen casos todavía. Cuando la FAQ esté en
   `main`, se puede añadir uno que pregunte el sueldo y compruebe que no guarda
   nada ni cierra.

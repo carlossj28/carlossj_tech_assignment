@@ -9,8 +9,10 @@ from test_runner import FakeClient, _completion, _tool_call
 
 from evals.harness import check, load_cases, run_case
 from schemas import SaveAnswerArgs
+from tools import INTERVIEW_KEY
 
-_EXPECT_KEYS = {"saved", "not_saved", "present", "status", "knockout", "completed", "reply_lang"}
+_EXPECT_KEYS = {"saved", "not_saved", "present", "status", "knockout", "completed", "reply_lang", "booked",
+                "slot_part"}
 
 
 def _r(status="pending", knockout=None, completed=False, reply="Vale"):
@@ -43,6 +45,15 @@ def test_check_reports_each_mismatch():
                    "present": ["start_date"], "status": "qualified", "reply_lang": "en"},
                   {"city": "Sevilla", "has_driver_license": True}, _r(reply="¿Tienes carné?"))
     assert len(fails) == 5
+
+
+def test_check_booking_and_its_part_of_day():
+    booked = {INTERVIEW_KEY: "2030-01-07T16:30"}
+    assert check({"booked": True, "slot_part": "afternoon"}, booked, _r()) == []
+    assert len(check({"slot_part": "morning"}, booked, _r())) == 1          # wrong part of the day
+    assert len(check({"booked": True}, {}, _r())) == 1                      # nothing booked
+    assert len(check({"booked": False}, booked, _r())) == 1                 # booked when it shouldn't
+    assert len(check({"slot_part": "afternoon"}, {}, _r())) == 1            # part asked, no booking
 
 
 def test_run_case_plays_the_script_through_the_real_runner():

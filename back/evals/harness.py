@@ -17,6 +17,7 @@ from typing import Any
 
 import language
 from runner import run_turn
+from tools import _PARTS, INTERVIEW_KEY
 
 CASES = Path(__file__).resolve().parent / "cases.json"
 
@@ -63,6 +64,13 @@ def check(expect: dict, extracted: dict, r) -> list[str]:
             fails.append(f"{key}: esperado {expect[key]!r}, obtenido {got!r}")
     if "reply_lang" in expect and language.detect(r.reply) != expect["reply_lang"]:
         fails.append(f"idioma de la respuesta: esperado {expect['reply_lang']}")
+    if "booked" in expect and (INTERVIEW_KEY in extracted) != expect["booked"]:
+        fails.append(f"entrevista reservada: esperado {expect['booked']}")
+    if "slot_part" in expect:
+        slot = extracted.get(INTERVIEW_KEY)
+        lo, hi = _PARTS[expect["slot_part"]]
+        if not slot or not lo <= int(slot[11:13]) < hi:
+            fails.append(f"hora de la entrevista: esperado {expect['slot_part']}, reservado {slot!r}")
     return fails
 
 
