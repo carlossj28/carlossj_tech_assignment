@@ -1,0 +1,18 @@
+<!-- Grupo Sazón mark (same as Brand.tsx): an aurora sun rising over the horizon, on the Aurora canvas. -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <defs>
+    <linearGradient id="sun" x1="0" y1="0.4" x2="1" y2="0.6">
+      <stop offset="0" stop-color="#8b7bff"/>
+      <stop offset="0.55" stop-color="#ff7a66"/>
+      <stop offset="1" stop-color="#ffb86b"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0.5" cy="0.62" r="0.5">
+      <stop offset="0" stop-color="#ff7a66" stop-opacity="0.35"/>
+      <stop offset="1" stop-color="#ff7a66" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="64" height="64" rx="14" fill="#050507"/>
+  <rect width="64" height="64" rx="14" fill="url(#glow)"/>
+  <path d="M14 38a18 18 0 0 1 36 0z" fill="url(#sun)"/>
+  <rect x="9" y="42" width="46" height="3" rx="1.5" fill="#ececf1" opacity="0.85"/>
+</svg>
