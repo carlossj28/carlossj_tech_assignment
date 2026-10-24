@@ -1,4 +1,4 @@
-"""Pydantic contracts for the two agent tools (ADR-014, ADR-015).
+"""Pydantic contracts for the agent tools (ADR-014, ADR-015, ADR-031).
 
 The model turns the candidate's words into typed values; these models check the
 types. The OpenAI tool schemas are generated from them, so the contract the
@@ -59,3 +59,8 @@ class FindSlotsArgs(BaseModel):
 class BookInterviewArgs(BaseModel):
     model_config = ConfigDict(extra="forbid")
     slot: datetime = Field(description="One of the slots find_slots returned, exactly as given.")
+
+
+class SearchFaqArgs(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    query: str = Field(min_length=1, max_length=300, description="The candidate's doubt, in Spanish.")

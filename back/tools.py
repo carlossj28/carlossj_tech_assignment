@@ -1,9 +1,10 @@
-"""The agent tools: OpenAI schemas + pure handlers.
+"""The agent tools: OpenAI schemas + handlers.
 
 Design: handlers take a plain `extracted` dict (the conversation's field store)
 and the raw LLM args. They validate, mutate the dict, and return a small result
-the model reacts to. No DB, no network here — persistence wraps these in P5, so
-the whole screening logic stays unit-testable offline.
+the model reacts to. No DB here — persistence wraps these in P5, so the whole
+screening logic stays unit-testable offline. The one exception to "no network"
+is search_faq, which reads the FAQ (faq.py) and never touches `extracted`.
 
 The model interprets the candidate; Python checks types and owns the outcome
 (ADR-013, ADR-015): every answer returns the status computed from the data, so a
@@ -21,7 +22,14 @@ from typing import Any, Callable
 
 from pydantic import BaseModel, ValidationError
 
-from schemas import BookInterviewArgs, EndInterviewArgs, FindSlotsArgs, SaveAnswerArgs
+import faq
+from schemas import (
+    BookInterviewArgs,
+    EndInterviewArgs,
+    FindSlotsArgs,
+    SaveAnswerArgs,
+    SearchFaqArgs,
+)
 from service_areas import cities, match_city
 
 Result = dict[str, Any]
@@ -51,6 +59,10 @@ OPENAI_TOOL_SCHEMAS: list[dict[str, Any]] = [
     _schema("book_interview",
             "Book the slot the candidate chose, exactly as find_slots returned it.",
             BookInterviewArgs),
+    _schema("search_faq",
+            "Look up the company FAQ when the candidate asks about the job (pay, vehicle, "
+            "shifts, contract, next steps...). Answer only from the results.",
+            SearchFaqArgs),
 ]
 
 # ── Status: always computed from the data (ADR-017) ─────────────────────────────
@@ -130,11 +142,16 @@ def book_interview(extracted: dict, args: dict) -> Result:
     return {"ok": True, "interview_at": extracted[INTERVIEW_KEY]}
 
 
+def search_faq(_extracted: dict, args: dict) -> Result:
+    return faq.search(SearchFaqArgs.model_validate(args).query)
+
+
 HANDLERS: dict[str, Callable[[dict, dict], Result]] = {
     "save_answer": save_answer,
     "end_interview": end_interview,
     "find_slots": find_slots,
     "book_interview": book_interview,
+    "search_faq": search_faq,
 }
 
 

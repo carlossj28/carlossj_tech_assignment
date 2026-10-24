@@ -93,7 +93,7 @@ def test_prompt_adapts_to_mexican_spanish():
 
 def test_the_agent_tools():
     assert [t["function"]["name"] for t in OPENAI_TOOL_SCHEMAS] == [
-        "save_answer", "end_interview", "find_slots", "book_interview"]
+        "save_answer", "end_interview", "find_slots", "book_interview", "search_faq"]
 
 
 def test_greeting_discloses_assistant():
