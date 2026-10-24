@@ -73,7 +73,12 @@ def session() -> dict:
         "instructions": SYSTEM_PROMPT + _VOICE_RULES,
         "tools": _TOOLS,
         # The candidate's words as text, so the recruiter can read the call.
-        "audio": {"input": {"transcription": {"model": "gpt-transcribe"}},
+        "audio": {"input": {"transcription": {"model": "gpt-transcribe"},
+                            # Background noise kept cutting Rita off: filter it (laptop mic or
+                            # headset) and ask for clearer, longer speech than the defaults (0.5, 500 ms).
+                            "noise_reduction": {"type": "near_field"},
+                            "turn_detection": {"type": "server_vad", "threshold": 0.65,
+                                               "silence_duration_ms": 700}},
                   "output": {"voice": "marin"}},  # a female voice: Rita
     })
     return {"conversation_id": str(uuid4()), "client_secret": secret.value}

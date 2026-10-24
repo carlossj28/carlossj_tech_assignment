@@ -95,7 +95,10 @@ export default function Voice() {
     setMood("thinking");
     ending.current = "no";
     try {
-      const mic = await navigator.mediaDevices.getUserMedia({ audio: true });
+      // Ask for the browser's cleanup explicitly: not every browser turns it all on by default.
+      const mic = await navigator.mediaDevices.getUserMedia({
+        audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
+      });
       const { conversation_id, client_secret } = await api.voiceSession();
       cid.current = conversation_id;
       audio.current = new AudioContext();
