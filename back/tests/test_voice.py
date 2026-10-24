@@ -32,6 +32,8 @@ def test_session_mints_key_with_same_brain_and_stores_nothing(monkeypatch):
     assert "problema técnico" in sent["instructions"]  # only voice gets `error` (browser fallback)
     assert sent["audio"]["input"]["transcription"]["model"] == "gpt-transcribe"
     assert sent["audio"]["output"]["voice"] == "marin"
+    assert sent["audio"]["input"]["noise_reduction"] == {"type": "near_field"}  # noise doesn't cut Rita off
+    assert sent["audio"]["input"]["turn_detection"]["threshold"] > 0.5
 
 
 # ── Bridge: tool calls + transcript, against a real Postgres ──────────────────
