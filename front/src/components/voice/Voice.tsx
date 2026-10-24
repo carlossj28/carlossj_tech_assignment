@@ -216,7 +216,7 @@ export default function Voice() {
         </section>
 
         <section className={`${styles.card} ${voice.card}`} aria-label="Llamada con Rita">
-          <div className={`${voice.stage} ${showAll ? voice.compact : ""}`}>
+          <div className={`${voice.stage} ${showAll ? voice.compact : ""} ${state === "done" ? voice.done : ""}`}>
             <div className={voice.orb}>
               <VoiceOrb mood={mood} level={() => meters.current[mood]?.() ?? 0} />
             </div>

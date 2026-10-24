@@ -2,6 +2,7 @@
    Layered on chat.module.css (.card, .send, .done…). */
 .card {
   padding-top: 8px;
+  overflow-y: auto; /* if the content outgrows a short screen it scrolls instead of being clipped */
 }
 
 /* Stage, subtitles and button sit together in the middle; the disclaimer stays at the bottom. */
@@ -22,6 +23,13 @@
 
 .foot {
   margin-top: auto;
+}
+
+/* Once the interview is done the card also holds the closing note: on a phone the orb steps back to make room. */
+@media (max-width: 1023px) {
+  .done .orb {
+    width: clamp(110px, 24dvh, 340px);
+  }
 }
 
 /* With the full transcript open the orb steps back to a small header. */
