@@ -15,10 +15,10 @@ from psycopg import Connection, errors
 from psycopg.rows import dict_row
 from psycopg_pool import ConnectionPool
 
-from tools import INTERVIEW_KEY
+from agent.tools import INTERVIEW_KEY
 
 if TYPE_CHECKING:
-    from runner import TurnResult
+    from agent.runner import TurnResult
 
 _pool: ConnectionPool | None = None
 _MIGRATION = Path(__file__).resolve().parent / "migrations" / "0001_initial.sql"

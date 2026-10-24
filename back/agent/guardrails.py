@@ -12,7 +12,7 @@ from __future__ import annotations
 
 import re
 
-from tools import HANDLERS
+from agent.tools import HANDLERS
 
 _ABUSE = re.compile(r"\b(idiota|est[úu]pid[oa]|gilipollas|puta|fuck|shit|stupid bot)\b", re.IGNORECASE)
 _INJECTION = re.compile(

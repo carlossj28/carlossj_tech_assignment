@@ -1,11 +1,11 @@
 """Live smoke test: chat with Rita in the terminal using the real OpenAI API.
 
-Run:  OPENAI_API_KEY=... uv run python -m llm_smoke
+Run:  OPENAI_API_KEY=... uv run python -m scripts.llm_smoke
 In-memory only (no DB). Ctrl-C to quit.
 """
 from __future__ import annotations
 
-from runner import run_turn
+from agent.runner import run_turn
 
 
 def main() -> None:

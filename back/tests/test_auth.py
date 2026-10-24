@@ -3,7 +3,7 @@ import os
 
 os.environ.setdefault("SESSION_SECRET", "test-secret")
 
-import auth  # noqa: E402
+from api import auth  # noqa: E402
 
 
 def test_password_hash_roundtrip():
@@ -28,8 +28,9 @@ def test_session_expired(monkeypatch):
 def test_login_flow(monkeypatch):
     """Login with a stubbed DB: good creds set a cookie, bad creds 401."""
     from fastapi.testclient import TestClient
-    import db
+
     import main
+    from storage import db
 
     stored = auth.hash_password("s3cret")
     monkeypatch.setattr(db, "get_recruiter", lambda u: {"username": u, "password_hash": stored} if u == "demo" else None)

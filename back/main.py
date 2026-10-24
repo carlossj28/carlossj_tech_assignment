@@ -11,16 +11,16 @@ from contextlib import asynccontextmanager
 from fastapi import Depends, FastAPI, HTTPException, Response
 from pydantic import BaseModel
 
-import auth
-from chat import router as chat_router
-from recruiter import router as recruiter_router
-from voice import router as voice_router
+from api import auth
+from api.chat import router as chat_router
+from api.recruiter import router as recruiter_router
+from api.voice import router as voice_router
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     if os.getenv("DATABASE_URL"):
-        import db
+        from storage import db
         db.init_db()
     yield
 
@@ -45,7 +45,7 @@ class LoginBody(BaseModel):
 
 @app.post("/api/recruiter/login")
 def login(body: LoginBody, response: Response) -> dict[str, str]:
-    import db
+    from storage import db
     recruiter = db.get_recruiter(body.username)
     if not recruiter or not auth.verify_password(recruiter["password_hash"], body.password):
         raise HTTPException(status_code=401, detail="invalid credentials")

@@ -7,9 +7,9 @@ from types import SimpleNamespace
 
 from test_runner import FakeClient, _completion, _tool_call
 
+from agent.schemas import SaveAnswerArgs
+from agent.tools import INTERVIEW_KEY
 from evals.harness import check, load_cases, run_case
-from schemas import SaveAnswerArgs
-from tools import INTERVIEW_KEY
 
 _EXPECT_KEYS = {"saved", "not_saved", "present", "status", "knockout", "completed", "reply_lang", "booked",
                 "slot_part", "sentiment", "tools_called"}

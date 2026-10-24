@@ -1,9 +1,8 @@
 """P4b checks: guardrails, language detection, input block in the runner, nudge."""
 from types import SimpleNamespace
 
-import guardrails
-import language
-from runner import run_nudge, run_turn
+from agent import guardrails, language
+from agent.runner import run_nudge, run_turn
 
 
 def test_guardrails_input_and_output():

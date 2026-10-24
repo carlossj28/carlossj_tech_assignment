@@ -9,8 +9,8 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException
 
-import auth
-import db
+from api import auth
+from storage import db
 
 router = APIRouter(prefix="/api/recruiter", dependencies=[Depends(auth.require_recruiter)])
 

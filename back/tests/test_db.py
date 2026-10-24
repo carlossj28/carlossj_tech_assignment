@@ -8,7 +8,7 @@ import os
 
 import pytest
 
-from runner import TurnResult
+from agent.runner import TurnResult
 
 pytestmark = pytest.mark.skipif(
     not os.getenv("DATABASE_URL"), reason="needs Postgres (docker compose up -d)"
@@ -17,7 +17,7 @@ pytestmark = pytest.mark.skipif(
 
 @pytest.fixture(scope="module")
 def _db():
-    import db
+    from storage import db
     db.init_db()
     return db
 

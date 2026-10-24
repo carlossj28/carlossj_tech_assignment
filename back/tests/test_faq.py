@@ -12,9 +12,9 @@ import pytest
 
 os.environ.setdefault("SESSION_SECRET", "test-secret")
 
-import faq  # noqa: E402
-from prompts import SYSTEM_PROMPT  # noqa: E402
-from tools import OPENAI_TOOL_SCHEMAS, dispatch  # noqa: E402
+from agent import faq  # noqa: E402
+from agent.prompts import SYSTEM_PROMPT  # noqa: E402
+from agent.tools import OPENAI_TOOL_SCHEMAS, dispatch  # noqa: E402
 
 
 def _bag_of_words(texts):
@@ -69,8 +69,8 @@ def test_prompt_tells_rita_to_answer_only_from_the_faq():
 def test_voice_faq_lookup_needs_no_database(fake_embed, monkeypatch):
     from fastapi.testclient import TestClient
 
-    import db
     import main
+    from storage import db
     monkeypatch.setattr(db, "pool", lambda: (_ for _ in ()).throw(AssertionError("no DB on FAQ")))
     body = TestClient(main.app).post("/api/voice/tool", json={
         "conversation_id": "00000000-0000-0000-0000-000000000001",
@@ -81,7 +81,7 @@ def test_voice_faq_lookup_needs_no_database(fake_embed, monkeypatch):
 def test_chat_turn_answers_from_the_faq(fake_embed):
     from test_runner import FakeClient, _completion, _tool_call
 
-    from runner import run_turn
+    from agent.runner import run_turn
     client = FakeClient([
         _completion(tools=[_tool_call("search_faq", {"query": "sueldo"})]),
         _completion(text="Depende de la ciudad y la jornada. ¿Tienes carné de conducir?"),

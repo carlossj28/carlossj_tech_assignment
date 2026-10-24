@@ -1,16 +1,16 @@
 """Seed a demo recruiter + demo conversations so the dashboard has something to show.
 
-Run: `uv run python -m seed`. Idempotent: skips conversations if any exist,
+Run: `uv run python -m scripts.seed`. Idempotent: skips conversations if any exist,
 and the recruiter upsert is a no-op if the username is taken.
 """
 from __future__ import annotations
 
 import os
 
-import auth
-import db
-from runner import TurnResult
-from tools import screening_status
+from agent.runner import TurnResult
+from agent.tools import screening_status
+from api import auth
+from storage import db
 
 _DEMO = [  # one exchange each, written through the real save path
     dict(source="chat", rita="¿Tienes carné de conducir y en qué ciudad vives?",

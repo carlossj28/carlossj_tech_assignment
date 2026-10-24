@@ -1,9 +1,9 @@
 """Screening logic checks: typed answers, city matching, status from the data."""
 from datetime import date, datetime, timedelta
 
-from prompts import GREETING, SYSTEM_PROMPT
-from service_areas import cities, match_city
-from tools import (
+from agent.prompts import GREETING, SYSTEM_PROMPT
+from agent.service_areas import cities, match_city
+from agent.tools import (
     INTERVIEW_KEY,
     OFFERED_KEY,
     OPENAI_TOOL_SCHEMAS,
