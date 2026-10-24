@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { useState } from "react";
-import PhoneIcon from "./PhoneIcon";
+import PhoneIcon from "../ui/PhoneIcon";
 import styles from "./chat.module.css";
 
 // Text input + send, and the way into the voice call next to them (an icon on phones).

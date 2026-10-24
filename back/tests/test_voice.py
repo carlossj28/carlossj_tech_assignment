@@ -10,9 +10,9 @@ from fastapi.testclient import TestClient  # noqa: E402
 
 
 def test_session_mints_key_with_same_brain_and_stores_nothing(monkeypatch):
-    import db
     import main
-    import voice
+    from api import voice
+    from storage import db
 
     sent = {}
     fake = SimpleNamespace(realtime=SimpleNamespace(client_secrets=SimpleNamespace(
@@ -41,14 +41,14 @@ needs_db = pytest.mark.skipif(not os.getenv("DATABASE_URL"), reason="needs Postg
 
 @pytest.fixture(scope="module")
 def api():
-    import db
     import main
+    from storage import db
     db.init_db()
     return TestClient(main.app)
 
 
 def _cid(api, monkeypatch):
-    import voice
+    from api import voice
     fake = SimpleNamespace(realtime=SimpleNamespace(client_secrets=SimpleNamespace(
         create=lambda session: SimpleNamespace(value="ek"))))
     monkeypatch.setattr(voice, "_default_client", lambda: fake)
@@ -57,7 +57,7 @@ def _cid(api, monkeypatch):
 
 @needs_db
 def test_rita_alone_creates_nothing_candidate_does(api, monkeypatch):
-    import db
+    from storage import db
     cid = _cid(api, monkeypatch)
     rita = {"role": "assistant", "text": "¡Hola! Soy Rita. ¿Cómo te llamas?"}
     assert api.post("/api/voice/transcript", json={"conversation_id": cid, "turns": [rita]}).status_code == 404
@@ -73,7 +73,7 @@ def test_rita_alone_creates_nothing_candidate_does(api, monkeypatch):
 
 @needs_db
 def test_tool_runs_same_brain_and_closes(api, monkeypatch):
-    import db
+    from storage import db
     cid = _cid(api, monkeypatch)
     tool = lambda name, args: api.post("/api/voice/tool", json={"conversation_id": cid, "name": name, "args": args}).json()  # noqa: E731
 

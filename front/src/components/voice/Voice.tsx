@@ -3,13 +3,13 @@
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import * as api from "@/lib/api";
-import Aurora from "./Aurora";
-import Booking from "./Booking";
-import Brand from "./Brand";
-import MessageList, { type Message } from "./MessageList";
-import PhoneIcon from "./PhoneIcon";
+import Aurora from "../ui/Aurora";
+import Booking from "../chat/Booking";
+import Brand from "../ui/Brand";
+import MessageList, { type Message } from "../chat/MessageList";
+import PhoneIcon from "../ui/PhoneIcon";
 import VoiceOrb, { type Mood } from "./VoiceOrb";
-import styles from "./chat.module.css";
+import styles from "../chat/chat.module.css";
 import voice from "./voice.module.css";
 
 type State = "idle" | "connecting" | "live" | "ended" | "done"; // done: Rita closed the interview

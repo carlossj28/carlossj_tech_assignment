@@ -6,7 +6,7 @@ import pytest
 
 os.environ.setdefault("SESSION_SECRET", "test-secret")
 
-import auth  # noqa: E402
+from api import auth  # noqa: E402
 
 pytestmark = pytest.mark.skipif(
     not os.getenv("DATABASE_URL"), reason="needs Postgres (docker compose up -d)"
@@ -17,8 +17,8 @@ pytestmark = pytest.mark.skipif(
 def api():
     from fastapi.testclient import TestClient
 
-    import db
     from main import app
+    from storage import db
     db.init_db()
     client = TestClient(app)
     client.cookies.set("session", auth.issue_session("demo"))
@@ -26,7 +26,7 @@ def api():
 
 
 def _conversation(minutes_quiet: int, completed: bool = False) -> str:
-    import db
+    from storage import db
     cid = db.start_conversation("chat", "¡Hola!")
     with db.pool().connection() as conn:
         conn.execute(
@@ -54,7 +54,7 @@ def test_list_newest_first_with_inactive_derived(api):
 
 
 def test_list_carries_the_city_for_the_analytics(api):
-    import db
+    from storage import db
     cid, blank = _conversation(0), _conversation(0)
     with db.pool().connection() as conn:
         conn.execute("""UPDATE conversations SET extracted_fields = '{"city": "Madrid"}' WHERE id = %s""", (cid,))

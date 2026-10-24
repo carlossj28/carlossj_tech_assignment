@@ -22,15 +22,15 @@ from typing import Any, Callable
 
 from pydantic import BaseModel, ValidationError
 
-import faq
-from schemas import (
+from agent import faq
+from agent.schemas import (
     BookInterviewArgs,
     EndInterviewArgs,
     FindSlotsArgs,
     SaveAnswerArgs,
     SearchFaqArgs,
 )
-from service_areas import cities, match_city
+from agent.service_areas import cities, match_city
 
 Result = dict[str, Any]
 

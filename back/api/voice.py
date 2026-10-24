@@ -14,11 +14,11 @@ from uuid import UUID, uuid4
 from fastapi import APIRouter
 from pydantic import BaseModel, Field
 
-import db
-from chat import _turn
-from prompts import SYSTEM_PROMPT, TECH_ERROR
-from runner import _default_client
-from tools import OPENAI_TOOL_SCHEMAS, dispatch, screening_status
+from agent.prompts import SYSTEM_PROMPT, TECH_ERROR
+from agent.runner import _default_client
+from agent.tools import OPENAI_TOOL_SCHEMAS, dispatch, screening_status
+from api.chat import _turn
+from storage import db
 
 router = APIRouter(prefix="/api/voice")
 

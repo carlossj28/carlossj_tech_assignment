@@ -16,9 +16,9 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
-import language
-from runner import run_turn
-from tools import _PARTS, INTERVIEW_KEY
+from agent import language
+from agent.runner import run_turn
+from agent.tools import _PARTS, INTERVIEW_KEY
 
 CASES = Path(__file__).resolve().parent / "cases.json"
 

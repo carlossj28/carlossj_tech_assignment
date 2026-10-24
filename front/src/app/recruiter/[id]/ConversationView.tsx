@@ -3,12 +3,12 @@
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
-import Aurora from "@/components/Aurora";
-import Avatar from "@/components/Avatar";
-import Brand from "@/components/Brand";
-import MessageList from "@/components/MessageList";
-import Orb from "@/components/Orb";
-import StatusPill from "@/components/StatusPill";
+import Aurora from "@/components/ui/Aurora";
+import Avatar from "@/components/ui/Avatar";
+import Brand from "@/components/ui/Brand";
+import MessageList from "@/components/chat/MessageList";
+import Orb from "@/components/ui/Orb";
+import StatusPill from "@/components/ui/StatusPill";
 import { FIELDS, KNOCKOUT, SENTIMENT, formatDate, formatDuration, formatField, formatRelative } from "@/lib/labels";
 import { type ConversationDetail, getConversation } from "@/lib/recruiter";
 import shared from "../recruiter.module.css";

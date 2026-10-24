@@ -7,8 +7,8 @@ SDK returns, so the runner can't tell the difference.
 from datetime import date
 from types import SimpleNamespace
 
-from prompts import GREETING
-from runner import run_turn
+from agent.prompts import GREETING
+from agent.runner import run_turn
 
 
 def _tool_call(name, args):

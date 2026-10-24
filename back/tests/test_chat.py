@@ -39,7 +39,7 @@ class FakeOpenAI:
 
 @pytest.fixture
 def fake(monkeypatch):
-    import runner
+    from agent import runner
     client = FakeOpenAI()
     monkeypatch.setattr(runner, "_default_client", lambda: client)
     return client
@@ -49,8 +49,8 @@ def fake(monkeypatch):
 def api():
     from fastapi.testclient import TestClient
 
-    import db
     from main import app
+    from storage import db
     db.init_db()
     return TestClient(app)
 
@@ -64,12 +64,12 @@ def _say(api, cid, text):
 
 
 def _turns(cid):
-    import db
+    from storage import db
     return db.get_turns(cid)
 
 
 def test_start_stores_nothing_until_the_first_message(api, fake):
-    import db
+    from storage import db
     body = api.post("/api/chat/start").json()
     assert "Rita" in body["greeting"]
     assert db.get_conversation(body["conversation_id"]) is None          # a visitor leaves no row
@@ -81,7 +81,7 @@ def test_start_stores_nothing_until_the_first_message(api, fake):
 
 
 def test_message_saves_turns_data_and_status(api, fake):
-    import db
+    from storage import db
     cid = _start(api)
     fake.script = [_completion(tools=[_tool("save_answer", {"full_name": "Marta", "has_driver_license": True})]),
                    _completion(text="¿En qué ciudad vives?")]
@@ -110,7 +110,7 @@ def test_second_turn_sees_text_history_and_saved_data(api, fake):
 
 
 def test_busy_conversation_returns_409(api, fake):
-    import db
+    from storage import db
     cid = _start(api)
     fake.script = [_completion(text="¿Tu nombre?")]
     _say(api, cid, "hola")                                   # the first message creates the row
@@ -120,7 +120,7 @@ def test_busy_conversation_returns_409(api, fake):
 
 
 def test_openai_failure_returns_502_and_saves_nothing(api, fake):
-    import db
+    from storage import db
     cid = _start(api)
     fake.script = [_completion(tools=[_tool("save_answer", {"full_name": "Luis"})]),
                    openai.OpenAIError("down")]
@@ -156,7 +156,7 @@ def test_no_nudge_once_completed(api, fake):
 
 
 def test_message_after_close_reopens_and_requalifies(api, fake):
-    import db
+    from storage import db
     cid = _start(api)
     fake.script = [_completion(tools=[_tool("save_answer", {"has_driver_license": True, "city": "Lerín"}),
                                       _tool("end_interview", {"summary": "Fuera de zona.", "sentiment": "frustrated"})]),

@@ -8,7 +8,7 @@ outcome (ADR-013). Covered cities come from the same catalog the matcher uses
 """
 from __future__ import annotations
 
-from service_areas import cities
+from agent.service_areas import cities
 
 GREETING = (
     "¡Hola! Soy Rita, la asistente virtual de Grupo Sazón. Te haré unas preguntas rápidas "
