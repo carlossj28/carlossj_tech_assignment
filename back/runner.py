@@ -18,7 +18,7 @@ from typing import Any
 import guardrails
 import language
 from prompts import GREETING, SYSTEM_PROMPT, TECH_ERROR
-from tools import OPENAI_TOOL_SCHEMAS, dispatch, screening_status
+from tools import OPENAI_TOOL_SCHEMAS, dispatch, next_field, screening_status
 
 _MAX_ITERS = 6  # hard cap so a misbehaving model can't loop forever
 
@@ -103,8 +103,11 @@ def run_turn(history: list[dict], extracted: dict, *, client=None) -> TurnResult
 
 
 def _saved_data(extracted: dict) -> str:
-    return "Datos ya guardados de este candidato (no los vuelvas a preguntar): " + (
+    line = "Datos ya guardados de este candidato (no los vuelvas a preguntar): " + (
         json.dumps(extracted, ensure_ascii=False) if extracted else "ninguno todavía")
+    if nxt := next_field(extracted):
+        line += f"\nSiguiente dato a preguntar: {nxt}"
+    return line
 
 
 _NUDGE = {  # up to 3 per silence (ADR-026)

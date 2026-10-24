@@ -83,7 +83,17 @@ def save_answer(extracted: dict, args: dict) -> Result:
         result["knockout"] = knockout
     if knockout == "out_of_service_area":
         result["covered_cities"] = cities()
+    if nxt := next_field(extracted):
+        result["next_question"] = nxt
     return result
+
+
+def next_field(extracted: dict) -> str | None:
+    """The first field still missing, in the flow's order (the schema's order), so the
+    model asks one thing per turn and skips none. None once complete or knocked out."""
+    if screening_status(extracted)[0] == "disqualified":
+        return None
+    return next((f for f in SaveAnswerArgs.model_fields if f not in extracted), None)
 
 
 def end_interview(extracted: dict, args: dict) -> Result:

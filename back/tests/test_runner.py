@@ -80,6 +80,7 @@ def test_model_sees_saved_data_and_text_only_history():
              {"has_driver_license": True}, client=client)
     data_line = seen["messages"][1]
     assert data_line["role"] == "system" and '"has_driver_license": true' in data_line["content"]
+    assert "Siguiente dato a preguntar: full_name" in data_line["content"]  # a turn with no save still knows
     assert [m["role"] for m in seen["messages"][2:4]] == ["assistant", "user"]
 
 
