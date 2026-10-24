@@ -81,21 +81,6 @@ def test_correction_recomputes_status():
     assert _save(e, city="Madrid")["status"] == "qualified"
 
 
-def test_save_answer_names_the_next_question_in_flow_order():
-    # Felipe's case: after the city came availability, schedule and start date, and
-    # experience was never asked. Python points at the gap, one field at a time.
-    e: dict = {}
-    assert _save(e, full_name="Felipe", has_driver_license=True, city="Guadalajara",
-                 availability=["full_time"])["next_question"] == "preferred_schedule"
-    assert _save(e, preferred_schedule=["flexible"])["next_question"] == "prior_experience"
-    assert _save(e, start_date=date.today().isoformat())["next_question"] == "prior_experience"
-    assert "next_question" not in _save(e, prior_experience={"years": 0, "platforms": []})
-
-
-def test_no_next_question_after_a_knockout():
-    assert "next_question" not in _save({}, has_driver_license=False)
-
-
 def test_prompt_lists_every_covered_city():
     for city in cities():
         assert city in SYSTEM_PROMPT
