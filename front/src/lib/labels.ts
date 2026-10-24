@@ -1,4 +1,4 @@
-// Spanish labels for the recruiter panel. Keys mirror back/schemas.py.
+// Spanish labels for the recruiter panel. Keys mirror back/agent/schemas.py.
 import type { Status } from "./api";
 
 export const STATUS: Record<Status, string> = {

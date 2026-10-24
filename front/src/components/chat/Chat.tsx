@@ -4,13 +4,13 @@ import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import * as api from "@/lib/api";
 import { FIELDS } from "@/lib/labels";
-import Aurora from "./Aurora";
+import Aurora from "../ui/Aurora";
 import Booking from "./Booking";
-import Brand from "./Brand";
+import Brand from "../ui/Brand";
 import Composer from "./Composer";
 import MessageList, { type Message } from "./MessageList";
-import Orb from "./Orb";
-import PhoneIcon from "./PhoneIcon";
+import Orb from "../ui/Orb";
+import PhoneIcon from "../ui/PhoneIcon";
 import styles from "./chat.module.css";
 
 const NUDGE_AFTER_MS = 60_000; // silence before asking Rita for a reminder (ADR-018)

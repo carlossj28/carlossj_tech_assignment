@@ -3,11 +3,11 @@
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import type { Status } from "@/lib/api";
-import Aurora from "@/components/Aurora";
-import Avatar from "@/components/Avatar";
-import Brand from "@/components/Brand";
-import Orb from "@/components/Orb";
-import StatusPill from "@/components/StatusPill";
+import Aurora from "@/components/ui/Aurora";
+import Avatar from "@/components/ui/Avatar";
+import Brand from "@/components/ui/Brand";
+import Orb from "@/components/ui/Orb";
+import StatusPill from "@/components/ui/StatusPill";
 import { KNOCKOUT, STATUS, formatDate, formatRelative } from "@/lib/labels";
 import { type ConversationRow, listConversations, logout } from "@/lib/recruiter";
 import Analytics from "./Analytics";

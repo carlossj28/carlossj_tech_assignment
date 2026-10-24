@@ -1,7 +1,7 @@
 // "Add to my calendar" for a booked interview. A .ics is plain text every calendar app
 // understands; the time is "floating" (no zone), like the slots themselves (ADR-032).
 
-const DURATION_MIN = 30; // mirrors back/data/slots.json
+const DURATION_MIN = 30; // mirrors back/agent/data/slots.json
 
 const stamp = (iso: string) => iso.replace(/[-:]/g, "").slice(0, 13) + "00"; // 2026-11-05T10:00 → 20261105T100000
 

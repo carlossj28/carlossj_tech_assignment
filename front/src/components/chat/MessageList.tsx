@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import Orb from "./Orb";
+import Orb from "../ui/Orb";
 import styles from "./chat.module.css";
 
 export type Message = { role: "rita" | "candidate"; text: string };
