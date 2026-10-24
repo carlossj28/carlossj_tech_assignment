@@ -7,6 +7,9 @@ export const STATUS: Record<Status, string> = {
   disqualified: "Descartado",
 };
 
+// The candidate's tone, judged by Rita on close (ADR-030).
+export const SENTIMENT = { positive: "Animado", neutral: "Neutral", frustrated: "Frustrado" };
+
 export const KNOCKOUT = { no_license: "Sin carné de conducir", out_of_service_area: "Ciudad sin cobertura" };
 
 const OPTIONS: Record<string, string> = {

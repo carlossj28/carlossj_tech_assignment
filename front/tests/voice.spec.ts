@@ -87,9 +87,36 @@ test("the full transcript is one tap away", async ({ page }) => {
   await expect(page.getByText("Tú: «Ana»")).toBeVisible();
 });
 
+test("the transcript keeps the order things were said and stores Rita's last words", async ({ page }) => {
+  await fakeCall(page);
+  const stored: object[] = [];
+  await page.route("**/api/voice/transcript", (r) => {
+    stored.push(...r.request().postDataJSON().turns);
+    return r.fulfill({ json: {} });
+  });
+  await startCall(page);
+  await rt(page, { type: "response.output_audio_transcript.done", transcript: "¿Cómo te llamas?" });
+  await rt(page, { type: "input_audio_buffer.committed", item_id: "u1" });
+  // Rita answers before the candidate's transcript arrives.
+  await rt(page, { type: "response.output_audio_transcript.done", transcript: "Encantada. ¿Tienes carné?" });
+  await rt(page, { type: "conversation.item.input_audio_transcription.completed", item_id: "u1", transcript: "Me llamo Ana" });
+  await rt(page, { type: "response.output_audio_transcript.done", transcript: "¡Hasta pronto!" }); // nobody speaks after it
+
+  const said = [
+    { role: "assistant", text: "¿Cómo te llamas?" },
+    { role: "user", text: "Me llamo Ana" },
+    { role: "assistant", text: "Encantada. ¿Tienes carné?" },
+    { role: "assistant", text: "¡Hasta pronto!" },
+  ];
+  await expect.poll(() => stored).toEqual(said);
+  await page.getByRole("button", { name: "Ver conversación completa" }).click();
+  await expect(page.locator("[data-role]")).toHaveText(said.map((t) => t.text));
+});
+
 test("after end_interview, Rita's goodbye ends the call for good", async ({ page }) => {
   await fakeCall(page);
   await startCall(page);
+  await expect(page.getByRole("link", { name: "Prefiero escribir" })).toBeVisible(); // mid-call: switching is fine
   const stored = page.waitForResponse("**/api/voice/tool"); // the back closes the interview first
   await rt(page, { type: "response.function_call_arguments.done", name: "end_interview", call_id: "1", arguments: "{}" });
   await expect(status(page)).toHaveText("Pensando…");
@@ -99,6 +126,7 @@ test("after end_interview, Rita's goodbye ends the call for good", async ({ page
 
   await expect(page.getByText("Entrevista terminada").first()).toBeVisible();
   await expect(page.getByRole("button", { name: /Llamar|Colgar/ })).toHaveCount(0);
+  await expect(page.getByRole("link", { name: "Prefiero escribir" })).toHaveCount(0); // no second interview by chat
 });
 
 test("a denied microphone shows an error and lets the candidate try again", async ({ page }) => {

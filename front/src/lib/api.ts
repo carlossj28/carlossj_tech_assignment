@@ -16,7 +16,7 @@ export const startChat = () =>
   post<{ conversation_id: string; greeting: string }>("/api/chat/start");
 
 export const sendMessage = (conversation_id: string, message: string) =>
-  post<{ reply: string; completed: boolean; status: Status }>("/api/chat/message", { conversation_id, message });
+  post<{ reply: string; completed: boolean; status: Status; interview_at: string | null }>("/api/chat/message", { conversation_id, message });
 
 export const nudge = (conversation_id: string) =>
   post<{ reply: string | null }>("/api/chat/nudge", { conversation_id });
@@ -27,8 +27,10 @@ export const voiceSession = () => post<{ conversation_id: string; client_secret:
 
 // The tool result goes back to the model. Any failure (back down, 409, 500) becomes `error`,
 // so Rita tells the candidate it's a technical problem instead of the call freezing.
+type ToolResult = { ok?: boolean; status?: Status; interview_at?: string; error?: string };
+
 export const voiceTool = (conversation_id: string, name: string, args: object) =>
-  post<{ ok?: boolean }>("/api/voice/tool", { conversation_id, name, args }).catch(() => ({ ok: false, error: "unavailable" }));
+  post<ToolResult>("/api/voice/tool", { conversation_id, name, args }).catch((): ToolResult => ({ ok: false, error: "unavailable" }));
 
 export const voiceTranscript = (conversation_id: string, turns: { role: "user" | "assistant"; text: string }[]) =>
   post<object>("/api/voice/transcript", { conversation_id, turns });

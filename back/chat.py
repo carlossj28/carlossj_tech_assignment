@@ -17,6 +17,7 @@ from pydantic import BaseModel, Field
 import db
 from prompts import GREETING
 from runner import run_nudge, run_turn
+from tools import INTERVIEW_KEY
 
 router = APIRouter(prefix="/api/chat")
 
@@ -63,7 +64,8 @@ def message(body: MessageBody) -> dict:
         history = [*db.get_history(conn, conv["id"]), {"role": "user", "content": body.message}]
         result = run_turn(history, conv["extracted_fields"])
         db.save_turn(conn, conv["id"], body.message, result)
-    return {"reply": result.reply, "completed": result.completed, "status": result.status}
+    return {"reply": result.reply, "completed": result.completed, "status": result.status,
+            "interview_at": result.extracted.get(INTERVIEW_KEY)}
 
 
 @router.post("/nudge")

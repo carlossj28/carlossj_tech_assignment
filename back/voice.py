@@ -23,15 +23,18 @@ from tools import OPENAI_TOOL_SCHEMAS, dispatch, screening_status
 router = APIRouter(prefix="/api/voice")
 
 _VOICE_RULES = ("\n# Voz\nEstás en una llamada: frases habladas y cortas, sin emojis, listas ni formato. "
-                "Empieza saludando y preguntando el nombre.\n"
-                # Saving a field is a round trip through the browser; a short line
-                # in the same response fills that silence.
-                "A veces, antes de guardar un dato, di una frase muy corta como «vale, lo apunto» "
-                "o «perfecto, un segundo» y luego guárdalo. No lo hagas en cada turno, varía la "
-                "frase y nunca repitas la misma dos veces seguidas.\n"
+                # The chat greets with fixed text (ADR-012); a call can't, so these are its must-says.
+                "Empieza presentándote como Rita, la asistente virtual de Grupo Sazón: unas preguntas "
+                "rápidas (unos 3 minutos) para el puesto de repartidor, y sus respuestas solo se usan "
+                "para este proceso. Luego pregunta su nombre.\n"
+                # The voice model tends to say it saves instead of saving (a real call: 0/7 stored).
+                "Cuando el candidato te dé un dato, llama a save_answer antes de contestarle. Nunca "
+                "digas que lo apuntas sin llamarla, y no le digas que no encaja hasta que save_answer "
+                "devuelva knockout.\n"
                 # The browser hangs up after the goodbye that follows end_interview, so
                 # corrections must come before it (ADR-029).
-                "Antes de llamar a end_interview (también tras un knockout), pregunta siempre "
+                "Antes de llamar a end_interview (también tras un knockout, y después de agendar si es "
+                "qualified), pregunta siempre "
                 "«¿Puedo ayudarte en algo más?». Si pide un cambio, guárdalo y vuelve a preguntarlo. "
                 "Llama a end_interview solo cuando diga que no; después despídete en una frase: "
                 "la llamada se cuelga sola.")
@@ -85,7 +88,8 @@ def tool(body: ToolBody) -> dict:
         ends = body.name == "end_interview" and out.get("ok")
         db.save_voice_data(conn, body.conversation_id, extracted, *screening_status(extracted),
                            completed=conv["completed"] or bool(ends),
-                           summary=body.args["summary"] if ends else None)
+                           summary=body.args["summary"] if ends else None,
+                           sentiment=body.args["sentiment"] if ends else None)
     return out
 
 

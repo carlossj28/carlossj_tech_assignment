@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import * as api from "@/lib/api";
 import Aurora from "./Aurora";
+import Booking from "./Booking";
 import Brand from "./Brand";
 import MessageList, { type Message } from "./MessageList";
 import PhoneIcon from "./PhoneIcon";
@@ -45,11 +46,16 @@ export default function Voice() {
   const [error, setError] = useState<string | null>(null);
   const [mood, setMood] = useState<Mood>("idle");
   const [showAll, setShowAll] = useState(false); // full transcript instead of subtitles
+  const [qualified, setQualified] = useState(false); // from each tool result's status
+  const [interviewAt, setInterviewAt] = useState<string | null>(null);
   const audio = useRef<AudioContext | null>(null);
   const meters = useRef<Partial<Record<Mood, () => number>>>({}); // candidate's mic while listening, Rita while speaking
   const pc = useRef<RTCPeerConnection | null>(null);
   const cid = useRef("");
-  const pending = useRef<Turn[]>([]); // Rita's sentences before the candidate speaks (not stored alone)
+  // The call's sentences in the order they were said. The candidate's line takes its place when they
+  // stop speaking and gets its text when the transcript arrives, often after Rita has answered.
+  const lines = useRef<{ id?: string; turn?: Turn; waiting: boolean }[]>([]);
+  const stored = useRef(0); // lines already sent to the back
   const queue = useRef(Promise.resolve()); // back calls one at a time: no 409 between tool and transcript
   // Hang-up after end_interview (ADR-029): "closing" once it succeeded, "bye" once the goodbye
   // that follows it is generated; the call ends when that audio stops playing.
@@ -58,19 +64,33 @@ export default function Voice() {
 
   const relay = (job: () => Promise<unknown>) => (queue.current = queue.current.then(job).then(() => undefined, () => undefined));
 
-  // A finished sentence: show it, and store it once the candidate has spoken (decision 1a).
-  function sentence(turn: Turn) {
-    setMessages((m) => [...m, { role: turn.role === "user" ? "candidate" : "rita", text: turn.text }]);
-    pending.current.push(turn);
-    if (!pending.current.some((t) => t.role === "user")) return;
-    const turns = pending.current;
-    pending.current = [];
-    relay(() => api.voiceTranscript(cid.current, turns));
+  // The lines before the first one still waiting for its transcript: show them, and store the new
+  // ones once the candidate has spoken (decision 1a: a call nobody answers stores nothing).
+  function publish() {
+    const end = lines.current.findIndex((l) => l.waiting);
+    const ready = lines.current.slice(0, end < 0 ? undefined : end);
+    const said = (from: number) => ready.slice(from).flatMap((l) => (l.turn ? [l.turn] : []));
+    setMessages(said(0).map((t) => ({ role: t.role === "user" ? "candidate" : "rita", text: t.text })));
+    if (!said(0).some((t) => t.role === "user")) return;
+    const turns = said(stored.current);
+    stored.current = ready.length;
+    if (turns.length) relay(() => api.voiceTranscript(cid.current, turns));
+  }
+
+  // The candidate's transcript (empty if it failed) fills the place they took when they stopped speaking.
+  function heard(id: string | undefined, text: string) {
+    let line = lines.current.find((l) => l.waiting && l.id === id);
+    if (!line) lines.current.push((line = { id, waiting: true }));
+    line.waiting = false;
+    if (text) line.turn = { role: "user", text };
+    publish();
   }
 
   async function call() {
     setError(null);
     setMessages([]);
+    lines.current = [];
+    stored.current = 0;
     setState("connecting");
     setMood("thinking");
     ending.current = "no";
@@ -100,10 +120,14 @@ export default function Voice() {
       events.onmessage = (e) => {
         const ev = JSON.parse(e.data);
         if (MOOD[ev.type]) setMood(MOOD[ev.type]);
-        if (ev.type === "conversation.item.input_audio_transcription.completed" && ev.transcript?.trim())
-          sentence({ role: "user", text: ev.transcript.trim() });
-        else if (ev.type === "response.output_audio_transcript.done" && ev.transcript?.trim())
-          sentence({ role: "assistant", text: ev.transcript.trim() });
+        if (ev.type === "input_audio_buffer.committed") lines.current.push({ id: ev.item_id, waiting: true });
+        else if (ev.type === "conversation.item.input_audio_transcription.completed"
+                 || ev.type === "conversation.item.input_audio_transcription.failed")
+          heard(ev.item_id, ev.transcript?.trim() ?? "");
+        else if (ev.type === "response.output_audio_transcript.done" && ev.transcript?.trim()) {
+          lines.current.push({ turn: { role: "assistant", text: ev.transcript.trim() }, waiting: false });
+          publish();
+        }
         else if (ev.type === "response.done" && ending.current === "closing"
                  && !ev.response?.output?.some((item: { type: string }) => item.type === "function_call"))
           ending.current = "bye";
@@ -112,6 +136,8 @@ export default function Voice() {
         else if (ev.type === "response.function_call_arguments.done")
           relay(async () => {
             const out = await api.voiceTool(cid.current, ev.name, JSON.parse(ev.arguments || "{}"));
+            if (out.status) setQualified(out.status === "qualified");
+            if (ev.name === "book_interview" && out.interview_at) setInterviewAt(out.interview_at);
             if (ev.name === "end_interview" && out.ok) {
               ending.current = "closing";
               fallback.current = setTimeout(finish, 15000); // in case the audio-stopped event never comes
@@ -166,13 +192,16 @@ export default function Voice() {
       <Aurora />
       <header className={styles.bar}>
         <Brand area="Repartidores" />
-        {/* Back to the text chat; on a phone it shrinks to an icon, like the chat's recruiter link. */}
-        <Link className={styles.staff} href="/" aria-label="Prefiero escribir">
-          <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden>
-            <path d="M4.5 11.5a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h7a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2H7.5l-3 2.5Z" />
-          </svg>
-          <span className={styles.staffText}>Prefiero escribir</span>
-        </Link>
+        {/* Back to the text chat; on a phone it shrinks to an icon, like the chat's recruiter link.
+            Hidden once the interview is done: the chat would start a second one for the same candidate. */}
+        {state !== "done" && (
+          <Link className={styles.staff} href="/" aria-label="Prefiero escribir">
+            <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden>
+              <path d="M4.5 11.5a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h7a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2H7.5l-3 2.5Z" />
+            </svg>
+            <span className={styles.staffText}>Prefiero escribir</span>
+          </Link>
+        )}
       </header>
 
       <div className={styles.layout}>
@@ -220,6 +249,7 @@ export default function Voice() {
               {live ? "Colgar" : state === "ended" ? "Llamar de nuevo" : "Llamar"}
             </button>
           )}
+          {qualified && (interviewAt || state === "done") && <Booking interviewAt={interviewAt} uid={cid.current} />}
           {messages.length > 0 && (
             <button className={voice.toggle} onClick={() => setShowAll((v) => !v)}>
               {showAll ? "Volver a Rita" : "Ver conversación completa"}
