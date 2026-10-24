@@ -12,11 +12,12 @@ from schemas import SaveAnswerArgs
 from tools import INTERVIEW_KEY
 
 _EXPECT_KEYS = {"saved", "not_saved", "present", "status", "knockout", "completed", "reply_lang", "booked",
-                "slot_part"}
+                "slot_part", "sentiment", "tools_called"}
 
 
-def _r(status="pending", knockout=None, completed=False, reply="Vale"):
-    return SimpleNamespace(status=status, knockout=knockout, completed=completed, reply=reply)
+def _r(status="pending", knockout=None, completed=False, reply="Vale", sentiment=None, tools=()):
+    return SimpleNamespace(status=status, knockout=knockout, completed=completed, reply=reply,
+                           sentiment=sentiment, tool_calls=[{"name": t} for t in tools])
 
 
 def test_cases_file_is_well_formed():
@@ -56,12 +57,20 @@ def test_check_booking_and_its_part_of_day():
     assert len(check({"slot_part": "afternoon"}, {}, _r())) == 1            # part asked, no booking
 
 
+def test_check_sentiment_and_tools_called():
+    r = _r(completed=True, sentiment="frustrated", tools=["search_faq", "end_interview"])
+    assert check({"sentiment": "frustrated", "tools_called": ["search_faq"]}, {}, r) == []
+    assert len(check({"sentiment": "neutral"}, {}, r)) == 1
+    assert len(check({"tools_called": ["save_answer"]}, {}, r)) == 1
+
+
 def test_run_case_plays_the_script_through_the_real_runner():
     case = {"id": "x", "title": "x", "turns": [
         {"say": "No tengo carné", "expect": {"saved": {"has_driver_license": False},
                                               "status": "disqualified", "knockout": "no_license"}}]}
     client = FakeClient([
         _completion(tools=[_tool_call("save_answer", {"has_driver_license": False})]),
+        _completion(tools=[_tool_call("end_interview", {"summary": "Sin carné.", "sentiment": "neutral"})]),
         _completion(text="Lo siento, el carné es obligatorio."),
     ])
     res = run_case(case, client=client)

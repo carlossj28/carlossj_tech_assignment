@@ -44,8 +44,9 @@ def _schema(name: str, description: str, args: type[BaseModel]) -> dict[str, Any
 
 OPENAI_TOOL_SCHEMAS: list[dict[str, Any]] = [
     _schema("save_answer",
-            "Save what the candidate just answered, as typed values. Several fields at once "
-            "is fine. The result carries the screening status; on validation_error, re-ask.",
+            "Save what the candidate just answered, as typed values: ONE call per candidate "
+            "message, with every field it gave, and never a field the candidate did not say. "
+            "The result carries the screening status; on validation_error, re-ask.",
             SaveAnswerArgs),
     _schema("end_interview",
             "Close the interview with a 2-3 sentence summary and the candidate's tone for the "
@@ -57,7 +58,7 @@ OPENAI_TOOL_SCHEMAS: list[dict[str, Any]] = [
             "candidate's preference (a day, a start date, morning/afternoon/evening).",
             FindSlotsArgs),
     _schema("book_interview",
-            "Book the slot the candidate chose, exactly as find_slots returned it.",
+            "Book the slot the candidate chose, by its number among the ones find_slots offered.",
             BookInterviewArgs),
     _schema("search_faq",
             "Look up the company FAQ when the candidate asks about the job (pay, vehicle, "
@@ -108,6 +109,9 @@ def end_interview(extracted: dict, args: dict) -> Result:
 _SLOTS = Path(__file__).resolve().parent / "data" / "slots.json"
 _PARTS = {"morning": (0, 14), "afternoon": (14, 20), "evening": (20, 24)}
 INTERVIEW_KEY = "_interview_at"  # the turn's working copy only; persisted as its own column
+# The last slots offered, kept with the data: the model's history is text only (ADR-025),
+# so on the next turn it books by number and never has to rebuild a datetime from its words.
+OFFERED_KEY = "_offered_slots"
 
 
 def open_slots(now: datetime | None = None) -> list[datetime]:
@@ -129,16 +133,18 @@ def find_slots(extracted: dict, args: dict) -> Result:
              if (a.day is None or s.date() == a.day)
              and (a.from_date is None or s.date() >= a.from_date)
              and lo <= s.hour < hi]
-    return {"ok": True, "slots": [s.isoformat(timespec="minutes") for s in slots[:3]]}
+    extracted[OFFERED_KEY] = [s.isoformat(timespec="minutes") for s in slots[:3]]
+    return {"ok": True, "slots": extracted[OFFERED_KEY]}
 
 
 def book_interview(extracted: dict, args: dict) -> Result:
     if screening_status(extracted)[0] != "qualified":
         return {"ok": False, "validation_error": "only a qualified candidate can book an interview"}
-    slot = BookInterviewArgs.model_validate(args).slot.replace(tzinfo=None, second=0, microsecond=0)
-    if slot not in open_slots():
+    choice = BookInterviewArgs.model_validate(args).choice
+    offered = extracted.get(OFFERED_KEY, [])
+    if choice > len(offered) or datetime.fromisoformat(offered[choice - 1]) not in open_slots():
         return {"ok": False, "validation_error": "not an open slot: call find_slots and offer one of those"}
-    extracted[INTERVIEW_KEY] = slot.isoformat(timespec="minutes")
+    extracted[INTERVIEW_KEY] = extracted.pop(OFFERED_KEY)[choice - 1]
     return {"ok": True, "interview_at": extracted[INTERVIEW_KEY]}
 
 

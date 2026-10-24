@@ -6,7 +6,7 @@ model sees and the validation Python runs can never drift apart.
 """
 from __future__ import annotations
 
-from datetime import date, datetime
+from datetime import date
 from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
@@ -58,7 +58,7 @@ class FindSlotsArgs(BaseModel):
 
 class BookInterviewArgs(BaseModel):
     model_config = ConfigDict(extra="forbid")
-    slot: datetime = Field(description="One of the slots find_slots returned, exactly as given.")
+    choice: int = Field(ge=1, le=3, description="The offered slot the candidate chose: 1 = the first.")
 
 
 class SearchFaqArgs(BaseModel):

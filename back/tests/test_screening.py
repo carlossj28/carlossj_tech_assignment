@@ -3,7 +3,14 @@ from datetime import date, datetime, timedelta
 
 from prompts import GREETING, SYSTEM_PROMPT
 from service_areas import cities, match_city
-from tools import INTERVIEW_KEY, OPENAI_TOOL_SCHEMAS, dispatch, open_slots, screening_status
+from tools import (
+    INTERVIEW_KEY,
+    OFFERED_KEY,
+    OPENAI_TOOL_SCHEMAS,
+    dispatch,
+    open_slots,
+    screening_status,
+)
 
 
 def _save(extracted: dict, **fields) -> dict:
@@ -89,6 +96,7 @@ def test_prompt_lists_every_covered_city():
 def test_prompt_adapts_to_mexican_spanish():
     assert "español de México" in SYSTEM_PROMPT
     assert "licencia de manejo" in SYSTEM_PROMPT
+    assert "problema técnico" not in SYSTEM_PROMPT  # chat tools never return `error`: no excuse
 
 
 def test_the_agent_tools():
@@ -140,13 +148,15 @@ def test_find_slots_applies_the_candidate_criteria():
 def test_only_a_qualified_candidate_can_book():
     pending = {"has_driver_license": True}
     assert dispatch("find_slots", pending, {})["ok"] is False
-    assert dispatch("book_interview", pending, {"slot": open_slots()[0].isoformat()})["ok"] is False
+    assert dispatch("book_interview", pending, {"choice": 1})["ok"] is False
 
 
-def test_book_interview_takes_only_an_open_slot():
+def test_book_interview_takes_the_number_of_an_offered_slot():
     extracted = dict(QUALIFIED)
-    slot = dispatch("find_slots", extracted, {})["slots"][0]
-    assert dispatch("book_interview", extracted, {"slot": "2030-01-07T03:00"})["ok"] is False  # not a slot
-    booked = dispatch("book_interview", extracted, {"slot": slot})
-    assert booked == {"ok": True, "interview_at": slot}
-    assert extracted[INTERVIEW_KEY] == slot
+    assert dispatch("book_interview", extracted, {"choice": 1})["ok"] is False   # nothing offered yet
+    slots = dispatch("find_slots", extracted, {})["slots"]
+    assert extracted[OFFERED_KEY] == slots              # kept for the next turn (text-only history)
+    assert dispatch("book_interview", extracted, {"choice": 4})["ok"] is False   # 1-3 only
+    booked = dispatch("book_interview", extracted, {"choice": 2})
+    assert booked == {"ok": True, "interview_at": slots[1]}
+    assert extracted[INTERVIEW_KEY] == slots[1] and OFFERED_KEY not in extracted

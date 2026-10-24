@@ -2,8 +2,9 @@
 
 Each case is a fixed list of candidate messages; some turns carry expectations
 checked right after Rita answers. We check data, never wording: saved fields,
-status, knock-out, completed, reply language. So prompt changes (FAQ, tone,
-summary format) don't break the evals unless they break the screening itself.
+status, knock-out, completed, reply language, tools called, the tone Rita gave
+on close. So prompt changes (FAQ, tone, summary format) don't break the evals
+unless they break the screening itself.
 
 Scripted, not LLM-simulated, candidates: reproducible, cheap, one model in the
 loop. Cases and what each one covers: cases.json + README.md.
@@ -59,11 +60,15 @@ def check(expect: dict, extracted: dict, r) -> list[str]:
     fails += [f"{k}: no debería estar guardado ({extracted[k]!r})"
               for k in expect.get("not_saved", []) if k in extracted]
     fails += [f"{k}: debería estar guardado" for k in expect.get("present", []) if k not in extracted]
-    for key, got in (("status", r.status), ("knockout", r.knockout), ("completed", r.completed)):
+    for key, got in (("status", r.status), ("knockout", r.knockout), ("completed", r.completed),
+                     ("sentiment", r.sentiment)):
         if key in expect and expect[key] != got:
             fails.append(f"{key}: esperado {expect[key]!r}, obtenido {got!r}")
     if "reply_lang" in expect and language.detect(r.reply) != expect["reply_lang"]:
         fails.append(f"idioma de la respuesta: esperado {expect['reply_lang']}")
+    called = {t["name"] for t in r.tool_calls}
+    fails += [f"herramienta {t}: debería haberla llamado" for t in expect.get("tools_called", [])
+              if t not in called]
     if "booked" in expect and (INTERVIEW_KEY in extracted) != expect["booked"]:
         fails.append(f"entrevista reservada: esperado {expect['booked']}")
     if "slot_part" in expect:
