@@ -12,7 +12,8 @@ from __future__ import annotations
 import re
 
 _EN = {"the", "i", "yes", "no", "have", "my", "can", "we", "english", "hi", "hello",
-       "license", "driver", "work", "available", "morning", "afternoon", "evening"}
+       "license", "driver", "work", "available", "morning", "afternoon", "evening",
+       "you", "your", "what", "which", "are", "is", "thanks", "great"}
 _ES = {"el", "la", "sí", "no", "tengo", "mi", "puedo", "hola", "carné", "carnet",
        "conducir", "trabajo", "mañana", "tarde", "noche", "disponible", "español"}
 

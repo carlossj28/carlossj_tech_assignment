@@ -3,7 +3,7 @@
     "id": "feliz_paso_a_paso",
     "title": "Camino feliz, un dato por mensaje",
     "turns": [
-      {"say": "Me llamo Marta López"},
+      {"say": "Me llamo Marta López", "expect": {"not_saved": ["has_driver_license", "city"]}},
       {"say": "Sí, tengo carné de conducir", "expect": {"saved": {"has_driver_license": true}}},
       {"say": "Vivo en Madrid", "expect": {"saved": {"city": "Madrid"}, "status": "qualified"}},
       {"say": "Jornada completa"},
@@ -42,7 +42,7 @@
       {"say": "Hola, soy Lucía"},
       {"say": "No, no tengo carné", "expect": {
         "saved": {"has_driver_license": false}, "status": "disqualified",
-        "knockout": "no_license", "completed": true}}
+        "knockout": "no_license", "completed": true, "sentiment": "neutral"}}
     ]
   },
   {
@@ -50,7 +50,7 @@
     "title": "Knock-out: ciudad sin cobertura",
     "turns": [
       {"say": "Me llamo Pedro"},
-      {"say": "Sí, tengo carné"},
+      {"say": "Sí, tengo carné", "expect": {"saved": {"has_driver_license": true}, "not_saved": ["city"]}},
       {"say": "Vivo en Zaragoza", "expect": {
         "status": "disqualified", "knockout": "out_of_service_area", "completed": true}}
     ]
@@ -144,7 +144,7 @@
     "turns": [
       {"say": "Soy Carmen y no tengo carné", "expect": {"status": "disqualified", "knockout": "no_license"}},
       {"say": "Perdona, me he expresado mal: sí tengo carné", "expect": {
-        "saved": {"has_driver_license": true}, "status": "pending"}}
+        "saved": {"has_driver_license": true}, "not_saved": ["city"], "status": "pending"}}
     ]
   },
   {
@@ -215,8 +215,56 @@
       {"say": "Soy Pilar Navas, tengo carné y vivo en Málaga", "expect": {"status": "qualified"}},
       {"say": "Media jornada, flexible, 2 años en Glovo, empiezo el 1 de diciembre de 2030"},
       {"say": "Todo bien"},
-      {"say": "Por la mañana, el primero que tengas", "expect": {"booked": true}},
+      {"say": "Por la mañana"},
+      {"say": "El primero, perfecto", "expect": {"booked": true}},
       {"say": "¿Me puedes reservar otra entrevista más, por si acaso?", "expect": {"booked": true}}
+    ]
+  },
+  {
+    "id": "varios_datos_un_mensaje",
+    "title": "Dos datos en una frase (\"Me llamo María y soy de Madrid\")",
+    "turns": [
+      {"say": "Me llamo María y soy de Madrid", "expect": {
+        "saved": {"full_name": "María", "city": "Madrid"}, "not_saved": ["has_driver_license"],
+        "status": "pending"}}
+    ]
+  },
+  {
+    "id": "faq_sueldo",
+    "title": "FAQ: pregunta el sueldo a mitad de entrevista",
+    "turns": [
+      {"say": "Soy Rosa Díaz, tengo carné y vivo en Madrid", "expect": {"status": "qualified"}},
+      {"say": "Antes de seguir, ¿cuánto se cobra?", "expect": {
+        "tools_called": ["search_faq"], "completed": false, "status": "qualified",
+        "not_saved": ["availability", "preferred_schedule", "prior_experience", "start_date"]}},
+      {"say": "Vale. Jornada completa", "expect": {"saved": {"availability": ["full_time"]}}}
+    ]
+  },
+  {
+    "id": "faq_vehiculo_en_ingles",
+    "title": "FAQ: pregunta en inglés si necesita vehículo propio",
+    "turns": [
+      {"say": "Hi, I'm Tom Baker, I have a driver license and I live in Barcelona"},
+      {"say": "Do I need my own motorbike?", "expect": {
+        "tools_called": ["search_faq"], "completed": false, "reply_lang": "en"}}
+    ]
+  },
+  {
+    "id": "sentimiento_frustrado",
+    "title": "Sentimiento: se queja del proceso al ser descartado → frustrated",
+    "turns": [
+      {"say": "Soy Iván"},
+      {"say": "No tengo carné. Y vaya rollo de proceso, llevo toda la mañana rellenando cosas y ya estoy harto",
+       "expect": {"knockout": "no_license", "completed": true, "sentiment": "frustrated"}}
+    ]
+  },
+  {
+    "id": "sentimiento_positivo",
+    "title": "Sentimiento: animado aunque viva fuera de cobertura → positive",
+    "turns": [
+      {"say": "¡Hola! Soy Leo, ¡me hace muchísima ilusión este trabajo! Tengo carné 😊"},
+      {"say": "Vivo en Zaragoza, ¡pero me encantaría trabajar con vosotros!", "expect": {
+        "knockout": "out_of_service_area", "completed": true, "sentiment": "positive"}}
     ]
   }
 ]

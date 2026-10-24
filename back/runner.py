@@ -12,6 +12,7 @@ from __future__ import annotations
 import json
 import os
 from dataclasses import dataclass, field
+from datetime import date
 from functools import lru_cache
 from typing import Any
 
@@ -21,6 +22,10 @@ from prompts import GREETING, SYSTEM_PROMPT, TECH_ERROR
 from tools import OPENAI_TOOL_SCHEMAS, dispatch, screening_status
 
 _MAX_ITERS = 6  # hard cap so a misbehaving model can't loop forever
+# A second save in one turn was always the model filling the next field of the flow on
+# its own (evals: a city or a license nobody gave). One message = one save_answer call.
+_SECOND_SAVE = {"ok": False, "validation_error": "already saved this message: save only "
+                "what the candidate said, all in one call"}
 
 
 @lru_cache(maxsize=1)
@@ -70,6 +75,7 @@ def run_turn(history: list[dict], extracted: dict, *, client=None) -> TurnResult
                 {"role": "system", "content": _saved_data(extracted)}, *history,
                 {"role": "system", "content": language.override(lang)}]
 
+    saved = False
     for _ in range(_MAX_ITERS):
         completion = client.chat.completions.create(
             **_model_kwargs(), messages=messages, tools=OPENAI_TOOL_SCHEMAS, tool_choice="auto"
@@ -89,9 +95,13 @@ def run_turn(history: list[dict], extracted: dict, *, client=None) -> TurnResult
         for tc in msg.tool_calls:
             try:
                 args = json.loads(tc.function.arguments or "{}")
-                out = dispatch(tc.function.name, extracted, args)
+                if tc.function.name == "save_answer" and saved:
+                    out = _SECOND_SAVE
+                else:
+                    out = dispatch(tc.function.name, extracted, args)
             except json.JSONDecodeError:  # model sent broken JSON: tell it, don't crash the turn
                 args, out = {}, {"ok": False, "validation_error": "arguments are not valid JSON"}
+            saved = saved or (tc.function.name == "save_answer" and out.get("ok") is True)
             result.tool_calls.append({"name": tc.function.name, "args": args, "result": out})
             if tc.function.name == "end_interview" and out.get("ok"):
                 result.completed, result.summary, result.sentiment = True, args["summary"], args["sentiment"]
@@ -102,9 +112,15 @@ def run_turn(history: list[dict], extracted: dict, *, client=None) -> TurnResult
     return result
 
 
+_WEEKDAYS = ("lunes", "martes", "miércoles", "jueves", "viernes", "sábado", "domingo")
+
+
 def _saved_data(extracted: dict) -> str:
-    return "Datos ya guardados de este candidato (no los vuelvas a preguntar): " + (
-        json.dumps(extracted, ensure_ascii=False) if extracted else "ninguno todavía")
+    # Today's date too: without it "el lunes que viene" can't become a start_date (evals).
+    today = date.today()
+    return (f"Hoy es {_WEEKDAYS[today.weekday()]} {today.isoformat()}. "
+            "Datos ya guardados de este candidato (no los vuelvas a preguntar): " + (
+                json.dumps(extracted, ensure_ascii=False) if extracted else "ninguno todavía"))
 
 
 _NUDGE = {  # up to 3 per silence (ADR-026)

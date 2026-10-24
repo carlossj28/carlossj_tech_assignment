@@ -12,11 +12,12 @@ from schemas import SaveAnswerArgs
 from tools import INTERVIEW_KEY
 
 _EXPECT_KEYS = {"saved", "not_saved", "present", "status", "knockout", "completed", "reply_lang", "booked",
-                "slot_part"}
+                "slot_part", "sentiment", "tools_called"}
 
 
-def _r(status="pending", knockout=None, completed=False, reply="Vale"):
-    return SimpleNamespace(status=status, knockout=knockout, completed=completed, reply=reply)
+def _r(status="pending", knockout=None, completed=False, reply="Vale", sentiment=None, tools=()):
+    return SimpleNamespace(status=status, knockout=knockout, completed=completed, reply=reply,
+                           sentiment=sentiment, tool_calls=[{"name": t} for t in tools])
 
 
 def test_cases_file_is_well_formed():
@@ -54,6 +55,13 @@ def test_check_booking_and_its_part_of_day():
     assert len(check({"booked": True}, {}, _r())) == 1                      # nothing booked
     assert len(check({"booked": False}, booked, _r())) == 1                 # booked when it shouldn't
     assert len(check({"slot_part": "afternoon"}, {}, _r())) == 1            # part asked, no booking
+
+
+def test_check_sentiment_and_tools_called():
+    r = _r(completed=True, sentiment="frustrated", tools=["search_faq", "end_interview"])
+    assert check({"sentiment": "frustrated", "tools_called": ["search_faq"]}, {}, r) == []
+    assert len(check({"sentiment": "neutral"}, {}, r)) == 1
+    assert len(check({"tools_called": ["save_answer"]}, {}, r)) == 1
 
 
 def test_run_case_plays_the_script_through_the_real_runner():

@@ -29,6 +29,7 @@ def test_session_mints_key_with_same_brain_and_stores_nothing(monkeypatch):
     assert "¿Puedo ayudarte en algo más?" in sent["instructions"]  # asked before hanging up (ADR-029)
     assert "asistente virtual" in sent["instructions"]  # says she's an AI, like the chat greeting
     assert "llama a save_answer antes de contestarle" in sent["instructions"]  # saves, not just says so
+    assert "problema técnico" in sent["instructions"]  # only voice gets `error` (browser fallback)
     assert sent["audio"]["input"]["transcription"]["model"] == "gpt-transcribe"
     assert sent["audio"]["output"]["voice"] == "marin"
 

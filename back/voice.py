@@ -16,7 +16,7 @@ from pydantic import BaseModel, Field
 
 import db
 from chat import _turn
-from prompts import SYSTEM_PROMPT
+from prompts import SYSTEM_PROMPT, TECH_ERROR
 from runner import _default_client
 from tools import OPENAI_TOOL_SCHEMAS, dispatch, screening_status
 
@@ -37,7 +37,11 @@ _VOICE_RULES = ("\n# Voz\nEstás en una llamada: frases habladas y cortas, sin e
                 "qualified), pregunta siempre "
                 "«¿Puedo ayudarte en algo más?». Si pide un cambio, guárdalo y vuelve a preguntarlo. "
                 "Llama a end_interview solo cuando diga que no; después despídete en una frase: "
-                "la llamada se cuelga sola.")
+                "la llamada se cuelga sola.\n"
+                # Only voice can see this: the browser turns a failed call to the back into `error`.
+                "Si una herramienta devuelve error (no validation_error), es un problema técnico "
+                f"guardando los datos: díselo con naturalidad, más o menos así: \"{TECH_ERROR}\", "
+                "y despídete con amabilidad.")
 
 # Realtime takes the same tools, flattened: {"type", "name", ...} instead of {"type", "function": {...}}.
 _TOOLS = [{"type": "function", **t["function"]} for t in OPENAI_TOOL_SCHEMAS]

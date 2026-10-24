@@ -29,6 +29,7 @@ def test_tool_names_never_reach_the_candidate():
 def test_language_detection():
     assert language.detect("hola, tengo carné") == "es"
     assert language.detect("hi, i have a driver license") == "en"
+    assert language.detect("Great! Which city are you based in? (Madrid, Málaga)") == "en"  # city names
     assert language.detect("") == "es"                       # default
 
 
