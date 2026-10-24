@@ -115,3 +115,21 @@ def test_malformed_tool_args_dont_crash_the_turn():
     r = run_turn([{"role": "user", "content": "hola"}], {}, client=client)
     assert r.reply == "Perdona, ¿me lo repites?"
     assert r.tool_calls[0]["result"]["ok"] is False
+
+
+def test_knockout_without_close_is_closed_keeping_ritas_goodbye():
+    client = FakeClient([
+        _completion(tools=[_tool_call("save_answer", {"city": "Zaragoza"})]),
+        _completion(text="Lo siento, no cubrimos Zaragoza. Si tienes cualquier otra duda, escríbeme."),
+        _completion(tools=[_tool_call("end_interview", {"summary": "Fuera de zona.", "sentiment": "neutral"})]),
+        _completion(text="Hecho."),
+    ])
+    r = run_turn([{"role": "user", "content": "Vivo en Zaragoza"}], {"has_driver_license": True}, client=client)
+    assert r.completed and r.knockout == "out_of_service_area" and r.sentiment == "neutral"
+    assert r.reply.startswith("Lo siento, no cubrimos Zaragoza")       # her goodbye, not "Hecho."
+
+
+def test_no_extra_close_when_the_knockout_was_already_there():
+    client = FakeClient([_completion(text="Si puedes en otra ciudad, dímelo.")])  # one call only
+    r = run_turn([{"role": "user", "content": "vale"}], {"city": "Zaragoza"}, client=client)
+    assert not r.completed and r.reply == "Si puedes en otra ciudad, dímelo."

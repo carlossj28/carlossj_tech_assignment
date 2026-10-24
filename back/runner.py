@@ -26,6 +26,10 @@ _MAX_ITERS = 6  # hard cap so a misbehaving model can't loop forever
 # its own (evals: a city or a license nobody gave). One message = one save_answer call.
 _SECOND_SAVE = {"ok": False, "validation_error": "already saved this message: save only "
                 "what the candidate said, all in one call"}
+# A knock-out this turn must leave the interview closed; if Rita says goodbye without
+# end_interview (evals: ~1 in 3 on a calm out-of-area candidate), she is asked once more.
+_CLOSE_NOW = ("Acabas de despedirte por un knockout sin llamar a end_interview. Llámala ahora "
+              "con el resumen y el tono; no escribas otra despedida.")
 
 
 @lru_cache(maxsize=1)
@@ -75,7 +79,7 @@ def run_turn(history: list[dict], extracted: dict, *, client=None) -> TurnResult
                 {"role": "system", "content": _saved_data(extracted)}, *history,
                 {"role": "system", "content": language.override(lang)}]
 
-    saved = False
+    saved, knockout_before, farewell = False, result.knockout, None
     for _ in range(_MAX_ITERS):
         completion = client.chat.completions.create(
             **_model_kwargs(), messages=messages, tools=OPENAI_TOOL_SCHEMAS, tool_choice="auto"
@@ -83,8 +87,13 @@ def run_turn(history: list[dict], extracted: dict, *, client=None) -> TurnResult
         msg = completion.choices[0].message
 
         if not msg.tool_calls:
-            result.reply = guardrails.sanitize_output(msg.content or "")
             result.status, result.knockout = screening_status(extracted)
+            if result.knockout not in (None, knockout_before) and not result.completed and not farewell:
+                farewell = guardrails.sanitize_output(msg.content or "")
+                messages += [{"role": "assistant", "content": msg.content or ""},
+                             {"role": "system", "content": _CLOSE_NOW}]
+                continue
+            result.reply = farewell or guardrails.sanitize_output(msg.content or "")
             return result
 
         messages.append({"role": "assistant", "content": msg.content, "tool_calls": [
@@ -107,7 +116,7 @@ def run_turn(history: list[dict], extracted: dict, *, client=None) -> TurnResult
                 result.completed, result.summary, result.sentiment = True, args["summary"], args["sentiment"]
             messages.append({"role": "tool", "tool_call_id": tc.id, "content": json.dumps(out)})
 
-    result.reply = TECH_ERROR
+    result.reply = farewell or TECH_ERROR
     result.status, result.knockout = screening_status(extracted)
     return result
 

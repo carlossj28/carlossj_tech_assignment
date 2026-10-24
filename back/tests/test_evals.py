@@ -70,6 +70,7 @@ def test_run_case_plays_the_script_through_the_real_runner():
                                               "status": "disqualified", "knockout": "no_license"}}]}
     client = FakeClient([
         _completion(tools=[_tool_call("save_answer", {"has_driver_license": False})]),
+        _completion(tools=[_tool_call("end_interview", {"summary": "Sin carné.", "sentiment": "neutral"})]),
         _completion(text="Lo siento, el carné es obligatorio."),
     ])
     res = run_case(case, client=client)
