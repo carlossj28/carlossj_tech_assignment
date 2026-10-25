@@ -23,5 +23,3 @@ Thumbs.db
 .idea/
 .vscode/
 
-# Internal docs — not for the public repo (yet)
-docs/

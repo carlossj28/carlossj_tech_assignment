@@ -3,11 +3,21 @@
 Grupo Sazón recibe ~1.000 solicitudes a la semana y 13 reclutadores las criban por
 teléfono: el 60 % no contesta y el 80 % del tiempo se va en perfiles que no cumplen.
 **Rita** sustituye esa primera llamada: entrevista al candidato por **chat o por voz**,
-en español o inglés, cuando él quiera; valida sus datos, le agenda la entrevista si es
+en español o inglés, cuando quiera; valida sus datos, le agenda la entrevista si es
 apto y deja cada caso listo en un **panel para el reclutador**.
 
-- **Chat** (`/`) · **Voz** (`/voz`) · **Panel del reclutador** (`/recruiter`)
-- Propuesta de integración con el ATS: [`back/proposals/ats-integration/`](back/proposals/ats-integration/README.md)
+- **Demo en vivo:** https://call-me-rita.up.railway.app · chat (`/`), voz (`/voz`) y panel
+  del reclutador (`/recruiter`)
+
+## Entregables
+
+| Documento | Qué cuenta |
+|---|---|
+| [`docs/proceso-diseno.pdf`](docs/proceso-diseno.pdf) | Diseño del proceso (Phase 1): etapas, personalidad, campos, casos difíciles y tono, en 2 páginas |
+| Este README | Puesta en marcha, arquitectura, decisiones clave y mejoras |
+| [`docs/arquitectura.md`](docs/arquitectura.md) | La versión larga: un turno de chat y una llamada de voz paso a paso, datos, contrato HTTP y todas las decisiones (ADR) |
+| [`back/evals/README.md`](back/evals/README.md) | Los candidatos con guion contra el modelo real y qué destaparon |
+| [`back/proposals/ats-integration/`](back/proposals/ats-integration/README.md) | Propuesta de integración con el ATS y contrato OpenAPI (solo diseño) |
 
 ## Puesta en marcha
 
@@ -16,8 +26,7 @@ Postgres) y una clave de OpenAI.
 
 ```sh
 cp .env.example .env              # rellena OPENAI_API_KEY y SESSION_SECRET
-docker compose up -d              # Postgres local en :5432 (usuario/clave/bd: sazon)
-# en .env: DATABASE_URL=postgresql://sazon:sazon@localhost:5432/sazon
+docker compose up -d              # Postgres local en :5432 (ya apuntado en .env)
 
 # Back — http://localhost:8000 (/docs para la API)
 cd back
@@ -59,7 +68,7 @@ back/
              FAQ, guardrails, idioma, catálogo de ciudades y huecos
   api/       endpoints: chat, voz, panel del reclutador, auth
   storage/   Postgres con SQL plano + una migración
-  scripts/   seed, smoke test, conversaciones de ejemplo
+  scripts/   seed y smoke test
   evals/     candidatos con guion contra el modelo real
 front/src/
   app/       páginas: chat, voz, panel (login, lista con analítica, ficha)
@@ -102,7 +111,7 @@ Tablas: `conversations` (estado, datos en JSONB, resumen, tono, entrevista),
 | **"Inactivo" se calcula en SQL** (5 min sin respuesta); recordatorios desde el front tras 1 min, máximo 3 | Sin jobs ni barridos en segundo plano: ningún estado se desincroniza | Un cron que marque abandonos |
 | **Agenda con huecos calculados en Python** y reserva por número | Se puede reservar hablando, también en voz; el modelo nunca inventa una fecha. Calendly queda como plan B en pantalla | Mandar un enlace de Calendly: en voz no es natural |
 | **FAQ con embeddings en memoria** (18 entradas, top 3) | Rita responde con el texto de la empresa y no inventa sueldo ni condiciones. Sin infraestructura nueva | Base de datos vectorial: sobra para 20 entradas |
-| **Evals con guion contra el modelo real**, que comprueban lo guardado y no las frases | Reproducibles, baratas y no se rompen al cambiar el tono. La primera pasada destapó 4 bugs, ya corregidos; ahora 77/78 en 3 vueltas | Un LLM que simule al candidato: no determinista y caro |
+| **Evals con guion contra el modelo real**, que comprueban lo guardado y no las frases | Reproducibles, baratas y no se rompen al cambiar el tono. La primera pasada destapó 4 bugs, ya corregidos; después, 77/78 en 3 vueltas (26 casos) | Un LLM que simule al candidato: no determinista y caro |
 | **Auth**: usuario y contraseña (Argon2), cookie firmada `HttpOnly` + `SameSite=Strict`, front como proxy de mismo origen | Simple y sólido para 13 reclutadores conocidos; aislado tras `require_recruiter` para cambiar a SSO | Magic link: arrastra un proveedor de email para nada |
 
 ## Mejoras con más tiempo
