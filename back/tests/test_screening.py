@@ -96,6 +96,7 @@ def test_prompt_lists_every_covered_city():
 def test_prompt_adapts_to_mexican_spanish():
     assert "español de México" in SYSTEM_PROMPT
     assert "licencia de manejo" in SYSTEM_PROMPT
+    assert "o habla: «qué onda»" in SYSTEM_PROMPT  # a call has no writing to judge by
     assert "problema técnico" not in SYSTEM_PROMPT  # chat tools never return `error`: no excuse
 
 
