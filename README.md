@@ -7,7 +7,7 @@ en español o inglés, cuando él quiera; valida sus datos, le agenda la entrevi
 apto y deja cada caso listo en un **panel para el reclutador**.
 
 - **Chat** (`/`) · **Voz** (`/voz`) · **Panel del reclutador** (`/recruiter`)
-- Propuesta de integración con el ATS: [`back/ATS integration/`](<back/ATS integration/README.md>)
+- Propuesta de integración con el ATS: [`back/proposals/ats-integration/`](back/proposals/ats-integration/README.md)
 
 ## Puesta en marcha
 
@@ -118,7 +118,7 @@ Tablas: `conversations` (estado, datos en JSONB, resumen, tono, entrevista),
 - **Canal WhatsApp**: donde ya están los candidatos; el agente no cambia, solo el transporte.
 - **Integración con el ATS**: el ATS crea la entrevista al aplicar y Rita le devuelve la
   ficha por webhooks firmados. Propuesta y contrato OpenAPI en
-  [`back/ATS integration/`](<back/ATS integration/README.md>).
+  [`back/proposals/ats-integration/`](back/proposals/ats-integration/README.md).
 - **Escala a 10K candidatos/semana**: ~2-3 escrituras/s en pico, así que la BD no es el
   cuello de botella; lo son la latencia y los límites de OpenAI. La API no guarda estado
   y escala con réplicas; después vendrían PgBouncer, filtros y paginación del panel en
