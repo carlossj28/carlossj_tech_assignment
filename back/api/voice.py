@@ -38,17 +38,6 @@ _VOICE_RULES = ("\n# Voz\nEstás en una llamada: frases habladas y cortas, sin e
                 "«¿Puedo ayudarte en algo más?». Si pide un cambio, guárdalo y vuelve a preguntarlo. "
                 "Llama a end_interview solo cuando diga que no; después despídete en una frase: "
                 "la llamada se cuelga sola.\n"
-                # A call has no writing to judge the variant by, and the first question is the licence:
-                # until Rita knows, a term that fits both countries.
-                "Escucha cómo habla desde su primera frase: si suena a México («qué onda», «pues» al "
-                "final, «mande»…), usa español de México desde ese momento. Si aún no lo sabes, pregunta "
-                "por el «carné o licencia de conducir».\n"
-                # A call isn't a screen: reading 12 cities is slow, and "escríbeme" makes no sense.
-                "Al preguntar la ciudad, no leas la lista: pregunta solo en qué ciudad está.\n"
-                "Tras un knockout (por carné o por ciudad), en voz no cierres en ese mismo turno: explica "
-                "el motivo, di «si me he equivocado, dímelo» (nunca «escríbeme»: es una llamada) y "
-                "pregunta «¿Puedo ayudarte en algo más?». Solo si es por ciudad, nombra las ciudades "
-                "cubiertas de su país (España o México) en una frase natural.\n"
                 # Only voice can see this: the browser turns a failed call to the back into `error`.
                 "Si una herramienta devuelve error (no validation_error), es un problema técnico "
                 f"guardando los datos: díselo con naturalidad, más o menos así: \"{TECH_ERROR}\", "
