@@ -1,0 +1,294 @@
+openapi: 3.1.0
+info:
+  title: Rita · API de integración con el ATS
+  version: 0.1.0-proposal
+  description: |
+    Propuesta de diseño, sin implementar (ver README.md en esta carpeta).
+    El ATS crea entrevistas y lee resultados; Rita le avisa por webhooks.
+    Los valores de los campos son los mismos que valida el agente
+    (back/agent/schemas.py) y guarda la base de datos (back/storage/migrations).
+servers:
+  - url: https://rita.gruposazon.example/ats/v1
+security:
+  - apiKey: []
+
+paths:
+  /screenings:
+    post:
+      operationId: createScreening
+      summary: Crear una entrevista para un candidato del ATS
+      description: Idempotente por `external_id`. Repetir la llamada devuelve la misma entrevista (200).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CreateScreening" }
+      responses:
+        "201":
+          description: Entrevista creada
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ScreeningCreated" }
+        "200":
+          description: Ya existía una entrevista con ese external_id
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ScreeningCreated" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "422": { $ref: "#/components/responses/Invalid" }
+    get:
+      operationId: listScreenings
+      summary: Cambios desde una fecha, para reconciliar
+      parameters:
+        - name: updated_since
+          in: query
+          required: true
+          schema: { type: string, format: date-time }
+        - name: cursor
+          in: query
+          schema: { type: string }
+        - name: limit
+          in: query
+          schema: { type: integer, minimum: 1, maximum: 200, default: 100 }
+      responses:
+        "200":
+          description: Página de entrevistas, de más antigua a más reciente
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items: { $ref: "#/components/schemas/Screening" }
+                  next_cursor: { type: [string, "null"] }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+
+  /screenings/{screening_id}:
+    parameters:
+      - $ref: "#/components/parameters/ScreeningId"
+    get:
+      operationId: getScreening
+      summary: Estado y resultado de una entrevista
+      responses:
+        "200":
+          description: La entrevista
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Screening" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/NotFound" }
+    delete:
+      operationId: deleteScreening
+      summary: Borrar los datos del candidato (derecho de supresión)
+      description: Borra la conversación y su transcripción. No se puede deshacer.
+      responses:
+        "204": { description: Borrada }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  /screenings/{screening_id}/cancel:
+    parameters:
+      - $ref: "#/components/parameters/ScreeningId"
+    post:
+      operationId: cancelScreening
+      summary: Cancelar una entrevista (oferta cerrada o candidato retirado)
+      description: El enlace deja de funcionar. Lo ya recogido se conserva.
+      responses:
+        "200":
+          description: Cancelada
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Screening" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+webhooks:
+  screening.completed:
+    post:
+      summary: Rita cerró la entrevista
+      parameters: &signature
+        - name: X-Rita-Signature
+          in: header
+          required: true
+          description: HMAC-SHA256 en hex de `"{timestamp}.{cuerpo}"` con el secreto compartido.
+          schema: { type: string }
+        - name: X-Rita-Timestamp
+          in: header
+          required: true
+          description: Segundos Unix. Rechazar si difiere más de 5 minutos.
+          schema: { type: integer }
+      requestBody: &event
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/Event" }
+      responses: &ack
+        "2XX": { description: Recibido. Cualquier otra respuesta se reintenta. }
+  screening.updated:
+    post:
+      summary: El candidato corrigió un dato tras cerrar y el resultado cambió
+      parameters: *signature
+      requestBody: *event
+      responses: *ack
+  interview.booked:
+    post:
+      summary: Un candidato apto reservó hueco de entrevista
+      parameters: *signature
+      requestBody: *event
+      responses: *ack
+  screening.inactive:
+    post:
+      summary: 24 h sin respuesta y sin cerrar
+      parameters: *signature
+      requestBody: *event
+      responses: *ack
+
+components:
+  securitySchemes:
+    apiKey:
+      type: http
+      scheme: bearer
+      description: API key por cliente, solo con permisos sobre /ats/v1.
+
+  parameters:
+    ScreeningId:
+      name: screening_id
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+
+  responses:
+    Unauthorized:
+      description: Falta la API key o no es válida
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+    NotFound:
+      description: No existe esa entrevista
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+    Invalid:
+      description: El cuerpo no cumple el contrato
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+
+  schemas:
+    CreateScreening:
+      type: object
+      required: [external_id]
+      additionalProperties: false
+      properties:
+        external_id:
+          type: string
+          maxLength: 200
+          description: Id de la candidatura en el ATS.
+        job_id:
+          type: [string, "null"]
+          description: Oferta del ATS, para trazabilidad.
+        candidate_name:
+          type: [string, "null"]
+          maxLength: 120
+          description: Si se conoce, Rita saluda por el nombre y no lo pregunta.
+        language:
+          type: string
+          enum: [es, en]
+          default: es
+        expires_at:
+          type: [string, "null"]
+          format: date-time
+          description: Tras esta fecha el enlace deja de funcionar.
+
+    ScreeningCreated:
+      type: object
+      required: [screening_id, interview_url]
+      properties:
+        screening_id: { type: string, format: uuid }
+        interview_url:
+          type: string
+          format: uri
+          description: Enlace de un solo candidato, para mandárselo.
+
+    Screening:
+      type: object
+      required: [screening_id, version, status, completed, fields]
+      properties:
+        screening_id: { type: string, format: uuid }
+        external_id: { type: [string, "null"] }
+        version:
+          type: integer
+          minimum: 1
+          description: Crece con cada cambio. Aplicar siempre la más alta.
+        channel: { type: [string, "null"], enum: [chat, voice, null] }
+        status:
+          type: string
+          enum: [pending, qualified, disqualified]
+          description: Calculado por el código a partir de los datos, nunca por el modelo.
+        knockout_reason: { type: [string, "null"], enum: [no_license, out_of_service_area, null] }
+        completed: { type: boolean, description: Rita cerró la entrevista. }
+        cancelled: { type: boolean, default: false }
+        fields: { $ref: "#/components/schemas/Fields" }
+        summary: { type: [string, "null"], description: 2-3 frases para el reclutador. }
+        sentiment: { type: [string, "null"], enum: [positive, neutral, frustrated, null] }
+        interview_at:
+          type: [string, "null"]
+          description: Hora local de la ciudad, sin zona (YYYY-MM-DDTHH:MM).
+          examples: ["2026-10-27T10:00"]
+        transcript_url:
+          type: [string, "null"]
+          format: uri
+          description: La transcripción, en el panel tras login. No viaja en el cuerpo.
+        started_at: { type: [string, "null"], format: date-time }
+        completed_at: { type: [string, "null"], format: date-time }
+
+    Fields:
+      type: object
+      description: Los 7 campos del cribado. Ausente = el candidato aún no lo dijo.
+      additionalProperties: false
+      properties:
+        full_name: { type: string, minLength: 1, maxLength: 120 }
+        has_driver_license: { type: boolean }
+        city:
+          type: string
+          description: Nombre canónico si está cubierta; si no, como lo dijo el candidato.
+        availability:
+          type: array
+          minItems: 1
+          items: { type: string, enum: [full_time, part_time, weekends] }
+        preferred_schedule:
+          type: array
+          minItems: 1
+          items: { type: string, enum: [morning, afternoon, evening, flexible] }
+        prior_experience:
+          type: object
+          required: [years, platforms]
+          additionalProperties: false
+          properties:
+            years: { type: integer, minimum: 0, maximum: 80 }
+            platforms:
+              type: array
+              items: { type: string }
+              description: Lista vacía = ninguna.
+        start_date: { type: string, format: date }
+
+    Event:
+      type: object
+      required: [event_id, type, occurred_at, screening]
+      properties:
+        event_id:
+          type: string
+          description: 'Único. Entrega "al menos una vez": ignorar repetidos.'
+        type:
+          type: string
+          enum: [screening.completed, screening.updated, interview.booked, screening.inactive]
+        occurred_at: { type: string, format: date-time }
+        screening: { $ref: "#/components/schemas/Screening" }
+
+    Error:
+      type: object
+      required: [detail]
+      properties:
+        detail: { type: string }
