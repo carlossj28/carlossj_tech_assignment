@@ -38,6 +38,11 @@ _VOICE_RULES = ("\n# Voz\nEstás en una llamada: frases habladas y cortas, sin e
                 "«¿Puedo ayudarte en algo más?». Si pide un cambio, guárdalo y vuelve a preguntarlo. "
                 "Llama a end_interview solo cuando diga que no; después despídete en una frase: "
                 "la llamada se cuelga sola.\n"
+                # A call isn't a screen: reading 12 cities is slow, and "escríbeme" makes no sense.
+                "Al preguntar la ciudad, no leas la lista: pregunta solo en qué ciudad está. Si save_answer "
+                "devuelve knockout por ciudad, nombra solo las ciudades cubiertas de su país (España o "
+                "México), en una frase natural; di «dímelo» en vez de «escríbeme», y pregunta "
+                "«¿Puedo ayudarte en algo más?» antes de end_interview (en voz no cierres en ese mismo turno).\n"
                 # Only voice can see this: the browser turns a failed call to the back into `error`.
                 "Si una herramienta devuelve error (no validation_error), es un problema técnico "
                 f"guardando los datos: díselo con naturalidad, más o menos así: \"{TECH_ERROR}\", "

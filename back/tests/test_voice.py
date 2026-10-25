@@ -27,6 +27,9 @@ def test_session_mints_key_with_same_brain_and_stores_nothing(monkeypatch):
     assert all("function" not in t and t["type"] == "function" for t in sent["tools"])  # Realtime shape
     assert "Eres Rita" in sent["instructions"] and "llamada" in sent["instructions"]
     assert "¿Puedo ayudarte en algo más?" in sent["instructions"]  # asked before hanging up (ADR-029)
+    assert "no leas la lista" in sent["instructions"]  # a call doesn't read 12 cities aloud
+    assert "«dímelo» en vez de «escríbeme»" in sent["instructions"]  # spoken knock-out, not chat text
+    assert "en voz no cierres en ese mismo turno" in sent["instructions"]  # the chat rule closes at once
     assert "asistente virtual" in sent["instructions"]  # says she's an AI, like the chat greeting
     assert "llama a save_answer antes de contestarle" in sent["instructions"]  # saves, not just says so
     assert "problema técnico" in sent["instructions"]  # only voice gets `error` (browser fallback)
