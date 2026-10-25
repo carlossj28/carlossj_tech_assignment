@@ -38,7 +38,7 @@ variables las pone la plataforma). Entra al panel con `RECRUITER_DEMO_USER` /
 | Comando (desde `back/`, con `--env-file ../.env`) | Qué hace |
 |---|---|
 | `uv run pytest` | 73 tests sin red (LLM falso); los de BD se saltan sin `DATABASE_URL` |
-| `uv run python -m evals` | 26 candidatos con guion contra el modelo real ([detalle](back/evals/README.md)) |
+| `uv run python -m evals` | 27 candidatos con guion contra el modelo real ([detalle](back/evals/README.md)) |
 | `uv run python -m scripts.llm_smoke` | Habla con Rita en la terminal, sin BD |
 | `cd front && npm test` | 20 e2e con Playwright (chat, voz y panel), con el back simulado |
 
