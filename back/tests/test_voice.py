@@ -28,8 +28,9 @@ def test_session_mints_key_with_same_brain_and_stores_nothing(monkeypatch):
     assert "Eres Rita" in sent["instructions"] and "llamada" in sent["instructions"]
     assert "¿Puedo ayudarte en algo más?" in sent["instructions"]  # asked before hanging up (ADR-029)
     assert "no leas la lista" in sent["instructions"]  # a call doesn't read 12 cities aloud
-    assert "«dímelo» en vez de «escríbeme»" in sent["instructions"]  # spoken knock-out, not chat text
-    assert "en voz no cierres en ese mismo turno" in sent["instructions"]  # the chat rule closes at once
+    assert "nunca «escríbeme»" in sent["instructions"]  # spoken knock-out, not chat text
+    assert "Tras un knockout (por carné o por ciudad), en voz no cierres" in sent["instructions"]  # any knock-out
+    assert "«carné o licencia de conducir»" in sent["instructions"]  # fits both until the variant is known
     assert "asistente virtual" in sent["instructions"]  # says she's an AI, like the chat greeting
     assert "llama a save_answer antes de contestarle" in sent["instructions"]  # saves, not just says so
     assert "problema técnico" in sent["instructions"]  # only voice gets `error` (browser fallback)
