@@ -15,7 +15,7 @@ cases.json ──► harness.run_case ──► runner.run_turn (gpt-5.4-mini re
 
 ```sh
 cd back
-OPENAI_API_KEY=... uv run python -m evals                 # los 26 casos, una vez
+OPENAI_API_KEY=... uv run python -m evals                 # los 27 casos, una vez
 OPENAI_API_KEY=... uv run python -m evals --repeat 3      # tasa de acierto por caso
 OPENAI_API_KEY=... uv run python -m evals --only sin_carne cambio_idioma
 OPENAI_API_KEY=... uv run python -m evals --out informe.json   # transcripciones completas
@@ -67,6 +67,7 @@ cierre no rompe las evals, salvo que rompa la entrevista en sí.
 |---|---|---|---|
 | `edge_sin_experiencia` | "Nunca he repartido" | Guarda experiencia 0 años y sin plataformas, y sigue apto | Aclarar en el prompt que "ninguna" es un valor válido, no un dato que falta |
 | `edge_ciudad_mal_escrita` | "Barclona" | El modelo pasa la errata y RapidFuzz la corrige a Barcelona | Si el modelo "arregla" la ciudad mal, nada; si no se guarda, revisar el umbral de RapidFuzz |
+| `edge_mexicano_desde_manana` | Jerga mexicana, "Full available" y "¡Desde mañana!" (conversación real del 25-oct) | Guarda licencia y Querétaro, convierte "mañana" en fecha y no cierra al confirmar | Rita pedía la fecha en día/mes/año y cerraba al proponer agendar: reglas de fecha relativa y de `end_interview` en el prompt |
 | `edge_fecha_pasada` | Fecha de incorporación en 2020 | La validación la rechaza y no se guarda | Ya lo gestiona Pydantic; si falla, Rita estaría ignorando el `validation_error` |
 | `edge_corrige_knockout` | "No tengo carné"… "perdona, sí tengo" | Tras el descarte, la corrección se guarda, no se inventa la ciudad y vuelve a pendiente (ADR-021, ADR-028) | Reforzar la regla de correcciones tras el cierre en el prompt |
 | `edge_otro_idioma` | Escribe en francés | Rita responde en español (solo hay ES/EN) | Si contesta en francés, la sustitución de idioma por turno no está mandando |

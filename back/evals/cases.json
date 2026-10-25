@@ -11,6 +11,7 @@
       {"say": "Dos años en Glovo"},
       {"say": "Puedo empezar el 1 de diciembre de 2030"},
       {"say": "Sí, todo correcto", "expect": {
+        "completed": false,
         "saved": {"full_name": "Marta López", "availability": ["full_time"],
                   "preferred_schedule": ["morning"],
                   "prior_experience": {"years": 2, "platforms": ["Glovo"]},
@@ -30,7 +31,7 @@
                             "prior_experience": {"years": 3, "platforms": ["Uber Eats", "Just Eat"]},
                             "start_date": "2031-01-15"},
                   "status": "qualified"}},
-      {"say": "Sí, está todo bien", "expect": {"booked": false}},
+      {"say": "Sí, está todo bien", "expect": {"booked": false, "completed": false}},
       {"say": "Cuando sea, me da igual el día"},
       {"say": "Vale, el primero", "expect": {"booked": true}}
     ]
@@ -128,6 +129,20 @@
     "turns": [
       {"say": "Soy Irene y tengo carné"},
       {"say": "Vivo en Barclona", "expect": {"saved": {"city": "Barcelona"}, "status": "qualified"}}
+    ]
+  },
+  {
+    "id": "edge_mexicano_desde_manana",
+    "title": "Edge: candidato mexicano que empieza \"desde mañana\" (conversación real del 25-oct)",
+    "turns": [
+      {"say": "Hola Rita qué onda, me llamo Eugenio Buendía"},
+      {"say": "¡Claro pues!", "expect": {"saved": {"has_driver_license": true}}},
+      {"say": "Prefiero Querétaro pues", "expect": {"saved": {"city": "Querétaro"}, "status": "qualified"}},
+      {"say": "Full available"},
+      {"say": "morning please"},
+      {"say": "La verdad no tengo experiencia, es mi primerita chamba"},
+      {"say": "¡Desde mañana!", "expect": {"present": ["start_date"]}},
+      {"say": "¡Todo correcto!", "expect": {"booked": false, "completed": false}}
     ]
   },
   {
