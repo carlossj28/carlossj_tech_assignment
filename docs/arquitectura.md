@@ -38,7 +38,7 @@ Navegador ── /api/* ──▶ front (Next.js) ── rewrite ──▶ back 
 | `back/agent/` | El cerebro, sin BD: `prompts.py`, `runner.py` (bucle del chat), `tools.py` (5 tools + `screening_status`), `schemas.py` (Pydantic), `faq.py` (RAG en memoria), `guardrails.py`, `language.py`, `service_areas.py`, `data/` (ciudades, huecos, FAQ) |
 | `back/api/` | Endpoints: `chat.py`, `voice.py`, `recruiter.py`, `auth.py` |
 | `back/storage/` | `db.py` (SQL plano, psycopg 3) y la migración única |
-| `back/scripts/` | `seed.py` (reclutador + 3 conversaciones demo), `llm_smoke.py` |
+| `back/scripts/` | `seed.py` (reclutador + 3 conversaciones demo), `llm_smoke.py`, `simulate_conversations.py` y `load_conversations.py` (conversaciones de ejemplo), `export_conversations.py` (informe de evals a Markdown) |
 | `back/evals/` | 27 candidatos con guion contra el modelo real |
 | `front/src/` | `app/` (páginas), `components/{chat,voice,ui}`, `lib/` (cliente API, analítica, .ics) |
 
@@ -204,13 +204,13 @@ Una sola migración idempotente (`IF NOT EXISTS`), aplicada al arrancar.
 
 ## 11. Pruebas
 
-- `cd back && uv run pytest`: 73 tests sin red (LLM falso inyectable); los de BD se saltan si no
+- `cd back && uv run pytest`: 76 tests sin red (LLM falso inyectable); los de BD se saltan si no
   hay `DATABASE_URL`.
 - `cd front && npm test`: 20 e2e con Playwright (chat, voz y panel), con el back simulado.
 - `cd back && uv run python -m evals`: 27 casos contra el modelo real (base, edge, agenda, FAQ y
   sentimiento). Comprueban lo que se **guardó** y las tools usadas, no lo que se dijo. La primera
   pasada dio 17/21 y destapó 4 bugs (reserva, datos inventados, cierre en knock-out, fechas
-  relativas), ya corregidos; con la suite de entonces (26 casos) ×3 salió 77/78. Fuera de CI a propósito
+  relativas), ya corregidos; hoy, con 27 casos ×3, 79/81 (los 2 fallos, en casos extremos). Fuera de CI a propósito
   (gastan tokens y el modelo no es determinista). Detalle en `back/evals/README.md`.
 
 ---

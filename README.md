@@ -18,6 +18,7 @@ apto y deja cada caso listo en un **panel para el reclutador**.
 | [`docs/arquitectura.md`](docs/arquitectura.md) | La versión larga: un turno de chat y una llamada de voz paso a paso, datos, contrato HTTP y todas las decisiones (ADR) |
 | [`back/evals/README.md`](back/evals/README.md) | Los candidatos con guion contra el modelo real y qué destaparon |
 | [`back/proposals/ats-integration/`](back/proposals/ats-integration/README.md) | Propuesta de integración con el ATS y contrato OpenAPI (solo diseño) |
+| Conversaciones de ejemplo | En el panel de la demo (`/recruiter`): candidatos simulados por un segundo modelo que hablan con la Rita real, de principio a fin |
 
 ## Puesta en marcha
 
@@ -54,9 +55,11 @@ entra al panel. La voz necesita micrófono; probada en Chrome, Edge y Safari.
 
 | Comando (desde `back/`, con `--env-file ../.env`) | Qué hace |
 |---|---|
-| `uv run pytest` | 73 tests sin red (LLM falso); los de BD se saltan sin `DATABASE_URL` |
+| `uv run pytest` | 76 tests sin red (LLM falso); los de BD se saltan sin `DATABASE_URL` |
 | `uv run python -m evals` | 27 candidatos con guion contra el modelo real ([detalle](back/evals/README.md)) |
 | `uv run python -m scripts.llm_smoke` | Habla con Rita en la terminal, sin BD |
+| `uv run python -m scripts.simulate_conversations salida/` | 10 candidatos simulados por un LLM hablan con Rita; Markdown + JSON |
+| `uv run python -m scripts.load_conversations salida/simulaciones.json marta ...` | Carga las elegidas en la BD (salen en el panel) |
 | `cd front && npm test` | 20 e2e con Playwright (chat, voz y panel), con el back simulado |
 
 ### Despliegue en cualquier infraestructura
@@ -163,7 +166,7 @@ Tablas: `conversations` (estado, datos en JSONB, resumen, tono, entrevista),
 | **"Inactivo" se calcula en SQL** (5 min sin respuesta); recordatorios desde el front tras 1 min, máximo 3 | Sin jobs ni barridos en segundo plano: ningún estado se desincroniza | Un cron que marque abandonos |
 | **Agenda con huecos calculados en Python** y reserva por número | Se puede reservar hablando, también en voz; el modelo nunca inventa una fecha. Calendly queda como plan B en pantalla | Mandar un enlace de Calendly: en voz no es natural |
 | **FAQ con embeddings en memoria** (18 entradas, top 3) | Rita responde con el texto de la empresa y no inventa sueldo ni condiciones. Sin infraestructura nueva | Base de datos vectorial: sobra para 20 entradas |
-| **Evals con guion contra el modelo real**, que comprueban lo guardado y no las frases | Reproducibles, baratas y no se rompen al cambiar el tono. La primera pasada destapó 4 bugs, ya corregidos; después, 77/78 en 3 vueltas (26 casos) | Un LLM que simule al candidato: no determinista y caro |
+| **Evals con guion contra el modelo real**, que comprueban lo guardado y no las frases | Reproducibles, baratas y no se rompen al cambiar el tono. La primera pasada destapó 4 bugs, ya corregidos; hoy, 79/81 en 3 vueltas (27 casos) | Un LLM que simule al candidato: no determinista y caro |
 | **Auth**: usuario y contraseña (Argon2), cookie firmada `HttpOnly` + `SameSite=Strict`, front como proxy de mismo origen | Simple y sólido para 13 reclutadores conocidos; aislado tras `require_recruiter` para cambiar a SSO | Magic link: arrastra un proveedor de email para nada |
 
 ## Mejoras con más tiempo
