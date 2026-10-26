@@ -38,7 +38,6 @@ El evaluador sí tiene tests offline (`tests/test_evals.py`, cliente falso).
 | `booked` | Hay (o no) una entrevista reservada |
 | `slot_part` | La entrevista reservada cae en `morning` / `afternoon` / `evening` (mismos tramos que `find_slots`) |
 | `tools_called` | Rita llamó a estas herramientas en este turno (p. ej. `search_faq`) |
-| `tools_not_called` | Rita no llamó a estas herramientas en este turno (p. ej. `find_slots` en el turno que completa los datos: antes va el resumen) |
 | `sentiment` | El tono que Rita le puso al candidato al cerrar en este turno (`positive` / `neutral` / `frustrated`) |
 
 No se comparan frases. Por eso cambiar el tono, añadir FAQ o el sentimiento del

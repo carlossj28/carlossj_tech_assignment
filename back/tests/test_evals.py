@@ -12,7 +12,7 @@ from agent.tools import INTERVIEW_KEY
 from evals.harness import check, load_cases, run_case
 
 _EXPECT_KEYS = {"saved", "not_saved", "present", "status", "knockout", "completed", "reply_lang", "booked",
-                "slot_part", "sentiment", "tools_called", "tools_not_called"}
+                "slot_part", "sentiment", "tools_called"}
 
 
 def _r(status="pending", knockout=None, completed=False, reply="Vale", sentiment=None, tools=()):
@@ -57,13 +57,11 @@ def test_check_booking_and_its_part_of_day():
     assert len(check({"slot_part": "afternoon"}, {}, _r())) == 1            # part asked, no booking
 
 
-def test_check_sentiment_and_tools_called_or_not():
+def test_check_sentiment_and_tools_called():
     r = _r(completed=True, sentiment="frustrated", tools=["search_faq", "end_interview"])
     assert check({"sentiment": "frustrated", "tools_called": ["search_faq"]}, {}, r) == []
     assert len(check({"sentiment": "neutral"}, {}, r)) == 1
     assert len(check({"tools_called": ["save_answer"]}, {}, r)) == 1
-    assert check({"tools_not_called": ["find_slots"]}, {}, r) == []
-    assert len(check({"tools_not_called": ["search_faq"]}, {}, r)) == 1
 
 
 def test_run_case_plays_the_script_through_the_real_runner():

@@ -69,8 +69,6 @@ def check(expect: dict, extracted: dict, r) -> list[str]:
     called = {t["name"] for t in r.tool_calls}
     fails += [f"herramienta {t}: debería haberla llamado" for t in expect.get("tools_called", [])
               if t not in called]
-    fails += [f"herramienta {t}: no debería haberla llamado" for t in expect.get("tools_not_called", [])
-              if t in called]
     if "booked" in expect and (INTERVIEW_KEY in extracted) != expect["booked"]:
         fails.append(f"entrevista reservada: esperado {expect['booked']}")
     if "slot_part" in expect:

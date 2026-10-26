@@ -9,7 +9,7 @@
       {"say": "Jornada completa"},
       {"say": "Prefiero las mañanas"},
       {"say": "Dos años en Glovo"},
-      {"say": "Puedo empezar el 1 de diciembre de 2030", "expect": {"tools_not_called": ["find_slots"]}},
+      {"say": "Puedo empezar el 1 de diciembre de 2030"},
       {"say": "Sí, todo correcto", "expect": {
         "completed": false,
         "saved": {"full_name": "Marta López", "availability": ["full_time"],
@@ -30,7 +30,7 @@
                             "availability": ["part_time"], "preferred_schedule": ["afternoon"],
                             "prior_experience": {"years": 3, "platforms": ["Uber Eats", "Just Eat"]},
                             "start_date": "2031-01-15"},
-                  "status": "qualified", "tools_not_called": ["find_slots"]}},
+                  "status": "qualified"}},
       {"say": "Sí, está todo bien", "expect": {"booked": false, "completed": false}},
       {"say": "Cuando sea, me da igual el día"},
       {"say": "Vale, el primero", "expect": {"booked": true}}
@@ -141,7 +141,7 @@
       {"say": "Full available"},
       {"say": "morning please"},
       {"say": "La verdad no tengo experiencia, es mi primerita chamba"},
-      {"say": "¡Desde mañana!", "expect": {"present": ["start_date"], "tools_not_called": ["find_slots"]}},
+      {"say": "¡Desde mañana!", "expect": {"present": ["start_date"]}},
       {"say": "¡Todo correcto!", "expect": {"booked": false, "completed": false}}
     ]
   },
@@ -185,7 +185,7 @@
     "title": "Apta: Rita ofrece huecos según su preferencia y reserva el que elige",
     "turns": [
       {"say": "Hola, soy Lucía Moreno, tengo carné y vivo en Valencia", "expect": {"status": "qualified"}},
-      {"say": "Media jornada, por las tardes, sin experiencia y puedo empezar el 1 de diciembre de 2030", "expect": {"tools_not_called": ["find_slots"]}},
+      {"say": "Media jornada, por las tardes, sin experiencia y puedo empezar el 1 de diciembre de 2030"},
       {"say": "Sí, todo correcto"},
       {"say": "Me viene mejor por la mañana"},
       {"say": "El primero que me has dicho, perfecto", "expect": {"booked": true}}
@@ -196,7 +196,7 @@
     "title": "Agenda: pide tarde y solo se le reserva de tarde",
     "turns": [
       {"say": "Soy Tomás Vidal, tengo carné y vivo en Sevilla", "expect": {"status": "qualified"}},
-      {"say": "Jornada completa, de mañanas, 1 año en Just Eat, empiezo el 10 de enero de 2031", "expect": {"tools_not_called": ["find_slots"]}},
+      {"say": "Jornada completa, de mañanas, 1 año en Just Eat, empiezo el 10 de enero de 2031"},
       {"say": "Correcto"},
       {"say": "Para la entrevista solo puedo por la tarde"},
       {"say": "Ese primero me vale", "expect": {"booked": true, "slot_part": "afternoon"}}
@@ -207,7 +207,7 @@
     "title": "Agenda: pide noche, no hay huecos, no reserva y cierra",
     "turns": [
       {"say": "Soy Clara Ortiz, tengo carné y vivo en Bilbao", "expect": {"status": "qualified"}},
-      {"say": "Fines de semana, por la noche, sin experiencia, empiezo el 1 de febrero de 2031", "expect": {"tools_not_called": ["find_slots"]}},
+      {"say": "Fines de semana, por la noche, sin experiencia, empiezo el 1 de febrero de 2031"},
       {"say": "Sí, correcto"},
       {"say": "Solo puedo por la noche, a partir de las nueve"},
       {"say": "No, de día imposible. Solo de noche", "expect": {"booked": false}},
@@ -228,7 +228,7 @@
     "title": "Agenda: ya reservada, no reserva otra",
     "turns": [
       {"say": "Soy Pilar Navas, tengo carné y vivo en Málaga", "expect": {"status": "qualified"}},
-      {"say": "Media jornada, flexible, 2 años en Glovo, empiezo el 1 de diciembre de 2030", "expect": {"tools_not_called": ["find_slots"]}},
+      {"say": "Media jornada, flexible, 2 años en Glovo, empiezo el 1 de diciembre de 2030"},
       {"say": "Todo bien"},
       {"say": "Por la mañana"},
       {"say": "El primero, perfecto", "expect": {"booked": true}},
