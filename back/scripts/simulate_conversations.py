@@ -1,6 +1,6 @@
 """Simulated candidates talk to the real agent: sample conversations end to end.
 
-Run:  uv run python -m scripts.simulate_conversations OUT_DIR
+Run:  uv run python -m scripts.simulate_conversations OUT_DIR [persona ...]
 A second model plays each persona (it reacts to Rita, unlike the scripted evals);
 Rita is the real run_turn. Writes one Markdown per persona plus simulaciones.json.
 """
@@ -70,17 +70,18 @@ def simulate(persona: str, client=None) -> dict:
 
 
 def main() -> None:
-    out = Path(sys.argv[1])
+    out, only = Path(sys.argv[1]), sys.argv[2:]
     out.mkdir(parents=True, exist_ok=True)
+    personas = [(n, p) for n, p in PERSONAS if not only or n in only]
     with ThreadPoolExecutor(max_workers=5) as pool:
-        runs = list(pool.map(simulate, [p for _, p in PERSONAS]))
-    for (name, persona), run in zip(PERSONAS, runs):
+        runs = list(pool.map(simulate, [p for _, p in personas]))
+    for (name, persona), run in zip(personas, runs):
         (out / f"{name}.md").write_text(to_markdown(persona, run) + f"\n**Resumen para el reclutador:** "
                                         f"{run['summary']}\n", "utf-8")
         print(f"{name:<8} {run['transcript'][-1]['status']:<13} cerrada={run['completed']} "
               f"turnos={len(run['transcript'])}")
     (out / "simulaciones.json").write_text(
-        json.dumps(dict(zip([n for n, _ in PERSONAS], runs)), ensure_ascii=False, indent=2, default=str), "utf-8")
+        json.dumps(dict(zip([n for n, _ in personas], runs)), ensure_ascii=False, indent=2, default=str), "utf-8")
 
 
 if __name__ == "__main__":

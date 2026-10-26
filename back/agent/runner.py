@@ -62,7 +62,7 @@ def run_turn(history: list[dict], extracted: dict, *, client=None) -> TurnResult
     if not history:
         return TurnResult(reply=GREETING, extracted=extracted)
     user_msg = history[-1]["content"]
-    lang = language.detect(user_msg)
+    lang = language.conversation_lang(history)
     result = TurnResult(reply="", extracted=extracted)
     result.status, result.knockout = screening_status(extracted)
 
@@ -145,7 +145,7 @@ def run_nudge(history: list[dict], nudge_n: int, *, client=None) -> str:
     """A gentle re-engagement message after the candidate goes quiet.
     No tools, no field changes — just a short reminder in their language."""
     client = client or _default_client()
-    lang = language.detect(history[-1]["content"]) if history else "es"
+    lang = language.conversation_lang(history)
     messages = [{"role": "system", "content": SYSTEM_PROMPT}, *history,
                 {"role": "system", "content": _NUDGE[nudge_n]},
                 {"role": "system", "content": language.override(lang)}]
