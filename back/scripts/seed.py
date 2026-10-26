@@ -33,11 +33,12 @@ _DEMO = [  # one exchange each, written through the real save path
 
 
 def run() -> None:
+    user, pwd = os.getenv("RECRUITER_DEMO_USER"), os.getenv("RECRUITER_DEMO_PASSWORD")
+    if not user or not pwd:  # no default credentials: they would end up in a client env
+        raise SystemExit("set RECRUITER_DEMO_USER and RECRUITER_DEMO_PASSWORD")
     db.init_db()
 
     # Demo recruiter (upsert is a no-op if it already exists).
-    user = os.getenv("RECRUITER_DEMO_USER", "demo")
-    pwd = os.getenv("RECRUITER_DEMO_PASSWORD", "demo")
     db.create_recruiter(user, auth.hash_password(pwd))
     print(f"recruiter '{user}' ready")
 

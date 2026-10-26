@@ -21,6 +21,12 @@ apto y deja cada caso listo en un **panel para el reclutador**.
 
 ## Puesta en marcha
 
+Son dos procesos sin estado (`back` y `front`) y un Postgres; nada depende de una
+plataforma concreta. Para la PoC lo hemos desplegado en Railway, pero corre igual en
+local, en Kubernetes (EKS, AKS, GKE...) o en cualquier infraestructura del cliente.
+
+### En local
+
 Requisitos: Python 3.12 con [uv](https://docs.astral.sh/uv/), Node 20+, Docker (para
 Postgres) y una clave de OpenAI.
 
@@ -40,9 +46,11 @@ npm install
 npm run dev                       # API_URL por defecto: http://localhost:8000
 ```
 
-El back no carga `.env` por su cuenta: `--env-file` se lo pasa (en Railway las
-variables las pone la plataforma). Entra al panel con `RECRUITER_DEMO_USER` /
-`RECRUITER_DEMO_PASSWORD`. La voz necesita micrófono y Chrome, Edge o Safari.
+La configuración llega solo por variables de entorno: en local, `--env-file` las carga
+desde `.env`; desplegado, las inyecta la plataforma (y no hay un `.env` que pueda
+acabar en una imagen). El seed crea el reclutador con `RECRUITER_DEMO_USER` /
+`RECRUITER_DEMO_PASSWORD` (sin valores por defecto: falla si faltan); con ellas se
+entra al panel. La voz necesita micrófono; probada en Chrome, Edge y Safari.
 
 | Comando (desde `back/`, con `--env-file ../.env`) | Qué hace |
 |---|---|
@@ -51,8 +59,52 @@ variables las pone la plataforma). Entra al panel con `RECRUITER_DEMO_USER` /
 | `uv run python -m scripts.llm_smoke` | Habla con Rita en la terminal, sin BD |
 | `cd front && npm test` | 20 e2e con Playwright (chat, voz y panel), con el back simulado |
 
-**Despliegue:** Railway lee `railway.toml` (servicios `back` y `front`) y Postgres se
-añade como plugin, que inyecta `DATABASE_URL`. `git push` a `main` → redeploy.
+### Despliegue en cualquier infraestructura
+
+| Pieza | Cómo se construye y arranca | Exposición |
+|---|---|---|
+| `back` (FastAPI) | Imagen de `back/Dockerfile`. Escucha en `$PORT` (8000 por defecto); healthcheck en `GET /health` | Solo red interna: únicamente lo llama el front |
+| `front` (Next.js) | Imagen de `front/Dockerfile` (`API_URL` y `NEXT_PUBLIC_CALENDLY_URL` como `--build-arg`). Escucha en `$PORT` (3000 por defecto) | Pública, detrás de HTTPS |
+| Postgres 16 | Gestionado (RDS, Azure Database for PostgreSQL...) o propio | Solo para el back |
+
+| Variable | Servicio | Notas |
+|---|---|---|
+| `OPENAI_API_KEY`, `SESSION_SECRET` | back | Secretos: Secret de Kubernetes, Secrets Manager, Key Vault... |
+| `DATABASE_URL` | back | `postgresql://usuario:clave@host:5432/bd` |
+| `COOKIE_SECURE=1` | back | Obligatorio en cuanto hay HTTPS |
+| `OPENAI_CHAT_MODEL`, `OPENAI_REASONING_EFFORT`, `OPENAI_REALTIME_MODEL`, `DB_POOL_MAX` | back | Opcionales; valores por defecto en `.env.example` |
+| `API_URL` | front, **al compilar** | URL interna del back (p. ej. `http://rita-back:8000`). Next fija el proxy `/api/*` en el build: si cambia, hay que reconstruir |
+| `NEXT_PUBLIC_CALENDLY_URL` | front, al compilar | Opcional |
+| `RECRUITER_DEMO_USER`, `RECRUITER_DEMO_PASSWORD` | seed | Solo para crear el primer reclutador |
+
+A tener en cuenta en cualquier entorno:
+
+- **Migración**: la aplica el back al arrancar (es idempotente); no hay paso aparte.
+- **Primer reclutador**: ejecutar una vez `uv run python -m scripts.seed` contra la BD
+  de destino (en Kubernetes, un `Job` o `kubectl exec deploy/rita-back -- uv run python -m scripts.seed`).
+- **HTTPS obligatorio** fuera de localhost: sin él el navegador no da el micrófono (voz)
+  y, con `COOKIE_SECURE=1`, no envía la cookie del panel.
+- **Salida a internet**: el back llama a `api.openai.com` y el navegador del candidato
+  abre WebRTC con OpenAI Realtime. Si la red del cliente filtra ese tráfico, la voz no
+  funciona.
+- **Escalado**: back y front no guardan estado; se escalan con réplicas sin sticky
+  sessions (el estado y los locks viven en Postgres).
+
+**Kubernetes (EKS, AKS, GKE...)**, a grandes rasgos:
+
+1. Construir y subir las imágenes al registro (ECR, ACR...):
+   `docker build -t <registro>/rita-back back/` y
+   `docker build --build-arg API_URL=http://rita-back:8000 -t <registro>/rita-front front/`
+   (`API_URL` apunta al Service del back).
+2. Postgres gestionado y un Secret con las variables del back.
+3. `Deployment` + `Service` (ClusterIP) para el back, con readiness en `GET /health` (puerto 8000).
+4. `Deployment` + `Service` para el front, y un `Ingress` con TLS **solo** hacia el front.
+5. Lanzar el seed una vez.
+
+### Railway (la demo de la PoC)
+
+`railway.toml` define los servicios `back` (Dockerfile) y `front` (Nixpacks); Postgres
+se añade como plugin, que inyecta `DATABASE_URL`. `git push` a `main` → redeploy.
 
 ## Arquitectura
 
