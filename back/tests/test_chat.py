@@ -87,7 +87,8 @@ def test_message_saves_turns_data_and_status(api, fake):
                    _completion(text="¿En qué ciudad vives?")]
     r = _say(api, cid, "Soy Marta y tengo carné")
     assert r.status_code == 200
-    assert r.json() == {"reply": "¿En qué ciudad vives?", "completed": False, "status": "pending"}
+    assert r.json() == {"reply": "¿En qué ciudad vives?", "completed": False, "status": "pending",
+                        "interview_at": None}
 
     turns = _turns(cid)
     assert [t["role"] for t in turns] == ["assistant", "user", "assistant"]
@@ -163,14 +164,15 @@ def test_message_after_close_reopens_and_requalifies(api, fake):
                    _completion(text="En Lerín no estamos; si te equivocaste, dímelo.")]
     assert _say(api, cid, "tengo carné, vivo en Lerín").json() == {
         "reply": "En Lerín no estamos; si te equivocaste, dímelo.", "completed": True,
-        "status": "disqualified"}
+        "status": "disqualified", "interview_at": None}
     conv = db.get_conversation(cid)
     assert conv["knockout_reason"] == "out_of_service_area" and conv["sentiment"] == "frustrated"
 
     fake.script = [_completion(tools=[_tool("save_answer", {"city": "Madrid"})]),
                    _completion(text="¡Genial! ¿Qué disponibilidad tienes?")]
     assert _say(api, cid, "perdona, es Madrid").json() == {
-        "reply": "¡Genial! ¿Qué disponibilidad tienes?", "completed": False, "status": "qualified"}
+        "reply": "¡Genial! ¿Qué disponibilidad tienes?", "completed": False, "status": "qualified",
+        "interview_at": None}
     conv = db.get_conversation(cid)
     assert conv["knockout_reason"] is None and conv["summary"] == "Fuera de zona."
     assert conv["sentiment"] == "frustrated"                   # kept until Rita closes again
