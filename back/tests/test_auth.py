@@ -1,4 +1,4 @@
-"""P3 auth checks: password hashing, signed-cookie lifecycle, login endpoint."""
+"""Auth checks: password hashing, signed-cookie lifecycle, login endpoint."""
 import os
 
 os.environ.setdefault("SESSION_SECRET", "test-secret")

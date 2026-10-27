@@ -2,8 +2,8 @@
 
 Design: handlers take a plain `extracted` dict (the conversation's field store)
 and the raw LLM args. They validate, mutate the dict, and return a small result
-the model reacts to. No DB here — persistence wraps these in P5, so the whole
-screening logic stays unit-testable offline. The one exception to "no network"
+the model reacts to. No DB here — api/chat.py and api/voice.py persist the result,
+so the whole screening logic stays unit-testable offline. The one exception to "no network"
 is search_faq, which reads the FAQ (faq.py) and never touches `extracted`.
 
 The model interprets the candidate; Python checks types and owns the outcome
@@ -11,7 +11,7 @@ The model interprets the candidate; Python checks types and owns the outcome
 knock-out never depends on the model deciding to call a tool.
 
 The same schemas register with both chat and the Realtime (voice) session; the
-same handlers run for both transports (see propuesta-tecnica §03).
+same handlers run for both transports (see docs/arquitectura.md).
 """
 from __future__ import annotations
 

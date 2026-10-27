@@ -1,4 +1,4 @@
-"""P4b checks: guardrails, language detection, input block in the runner, nudge."""
+"""Checks: guardrails, language detection, input block in the runner, nudge."""
 from types import SimpleNamespace
 
 from agent import guardrails, language

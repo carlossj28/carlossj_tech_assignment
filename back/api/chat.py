@@ -1,4 +1,4 @@
-"""Candidate chat endpoints (P5): start → message* (+ nudge on silence).
+"""Candidate chat endpoints: start → message* (+ nudge on silence).
 
 Each turn runs in ONE transaction holding the conversation's row lock (ADR-024):
 lock → read history + data → run the agent → save. If anything fails before the

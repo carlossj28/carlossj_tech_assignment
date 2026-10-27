@@ -1,4 +1,4 @@
-"""P5 chat endpoints against a real Postgres and a fake OpenAI. Skipped without DATABASE_URL.
+"""Chat endpoints against a real Postgres and a fake OpenAI. Skipped without DATABASE_URL.
 
 Run locally:  docker compose up -d
               DATABASE_URL=postgresql://sazon:sazon@localhost:5432/sazon uv run pytest tests/test_chat.py -v
